@@ -2,9 +2,9 @@ import { promises as fs } from "fs";
 import path from "path";
 
 const DEFAULT_MODEL = "openrouter/free";
-const DEFAULT_APP_NAME = "OpenRouter Chat";
+const DEFAULT_APP_NAME = "OpenRouter Workspace";
 const DEFAULT_APP_DESCRIPTION =
-  "A modern AI chat dashboard powered by OpenRouter.";
+  "One AI workspace for thinking, creating, organizing, researching, and working with information.";
 const DEFAULT_REFERER = "http://localhost:3000";
 
 interface RuntimeConfig {

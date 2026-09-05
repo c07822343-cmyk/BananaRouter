@@ -5,6 +5,8 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: getAppName(),
   description: getAppDescription(),
+  manifest: "/manifest.json",
+  icons: { icon: "/icon-192.png" },
 };
 
 export default function RootLayout({

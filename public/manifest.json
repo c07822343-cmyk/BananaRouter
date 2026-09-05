@@ -1,0 +1,21 @@
+{
+  "name": "OpenRouter Workspace",
+  "short_name": "Workspace",
+  "description": "AI workspace for docs, files, sheets, tasks, notes, calendar and chat — powered by OpenRouter",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8f9fa",
+  "theme_color": "#1a73e8",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

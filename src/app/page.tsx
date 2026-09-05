@@ -1,12 +1,12 @@
 "use client";
 
 import { WorkspaceProvider } from "@/lib/workspace/context";
-import { WorkspaceShell } from "@/components/shell/WorkspaceShell";
+import { DesktopShell } from "@/components/desktop/DesktopShell";
 
 export default function Page() {
   return (
     <WorkspaceProvider>
-      <WorkspaceShell />
+      <DesktopShell />
     </WorkspaceProvider>
   );
 }

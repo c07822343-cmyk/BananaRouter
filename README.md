@@ -1,137 +1,134 @@
-# BananaRouter — AI Workspace
+# BananaRouter — Private AI Desktop
 
-A polished, workspace-inspired AI productivity OS built around **OpenRouter**. The web UI and backend run **locally at localhost**, but **all AI inference is performed by the OpenRouter API** — no local models, no Ollama, no downloads.
+A private AI desktop environment for a very small number of users. It looks like a sleek, minimal desktop OS that happens to run in the browser — not a SaaS product, not a landing page, not a Google Workspace clone.
 
-**Brand:** `BananaRouter`. AI inference is **Powered by OpenRouter** — clean, modern, friendly, fast, technical, productive, playful yet professional (subtle — no gimmicks).
-
-> **Icon:** place your supplied vector/raster at `public/branding/banana-router-icon.svg` (preferred) or `.png` (≥256px, transparent). See `public/branding/README.md`. The UI loads `svg → png → clean “B” on #F6C446` fallback, preserves aspect with `object-contain`, and uses the icon for sidebar, PWA, favicon and loading states.
+> **Brand icon:** place your supplied vector/raster at `public/branding/banana-router-icon.svg` (preferred) or `.png` (≥256 transparent). `src/components/branding/BananaLogo.tsx` loads `svg → png → clean “B” on #F6C446` fallback with `object-contain` preserved aspect. Used for top bar, launcher, loading, favicon, PWA. Docs in `public/branding/README.md`.
 
 ```
-Browser (BananaRouter UI, local files, offline)
+Browser (BananaRouter desktop, local sessions, offline)
   ↓
-Local Next.js backend (server-side API key, validation, streaming)
+Local Next.js backend (server-side API key, validation, tool policy, streaming)
   ↓
-OpenRouter API  https://openrouter.ai/api/v1/chat/completions
+OpenRouter API https://openrouter.ai/api/v1/chat/completions
   ↓
-Selected model (openrouter/free by default, configurable, live catalog)
+Selected model (openrouter/free by default, Free Router)
   ↓
-Streamed SSE → Local app → Browser
+Streamed SSE → BananaRouter → Browser
 ```
 
-## Vision
+## Design
 
-> **One AI workspace for thinking, creating, organizing, researching, and working with information.**
+Quiet, dark-first, lots of negative space, subtle borders/shadows, 100–200ms animations, system typography, `120 kB / 222 kB` first load. 90% content / 8% controls / 2% branding. The BananaRouter icon provides most brand personality; no gradients/blobs/glass/neon, no marketing copy.
 
-Chat (document-style), Documents (Docs), Drive (files & folders), Sheets, Mail (local drafts), Calendar, Tasks, Notes (Keep), Projects, AI Tools, Starred, Trash, Search and a universal context-aware **BananaRouter AI** — all in one cohesive product. Every AI action goes through a **centralized service** that builds minimal, validated context and streams via OpenRouter. The full workspace is never sent blindly.
+## Desktop
 
-## Brand identity
+- **Background** `DesktopBackground.tsx` — dark `#09090b` with barely visible radial lighting + 4% noise + 2% grid. Disappears behind windows.
+- **Top system bar** `TopSystemBar.tsx` — 32px thin, `BananaRouter` + icon left · window title pill center · `● Connected / ○ Offline` + model (`Free Router` / `openrouter/free`) + Settings + clock right. Extremely compact.
+- **Launcher** `Launcher.tsx` — click BananaRouter or `Cmd/Ctrl+Space` (also `Cmd/Ctrl+K`). Search: Chat, Files, Tool Explorer, MCP, Sessions, Settings. Feels like an OS launcher, not nav.
+- **Window system** `DesktopWindow.tsx` — draggable title bar, resize handle, focus (bring to front via zIndex), close/minimize, subtle shadow, `border-white/10`, `bg-[#1a1a1e]` / `bg-[#121214]`. Windows: Sessions, Files, Tool Explorer, MCP, Settings. Main **AI Workspace** is always present as central window (not a dashboard).
+- **Central AI workspace** — conversation + composer only. No dashboard, no analytics. Open → type immediately.
 
-- **App name:** `BananaRouter` (everywhere: title `BananaRouter`, `BananaRouter — AI Workspace`, sidebar, top bar, PWA, metadata, About, onboarding)
-- **Description:** `BananaRouter — An AI-powered workspace built around OpenRouter.`
-- **Provider:** `Powered by OpenRouter` (small badge/pill, not main branding)
-- **Palette:** warm paper `#fcfaf7`, white surfaces, banana `#F6C446` / `#FFFBEB` / `#FDE68A` accents, ink `#1a1a1e`; subtle shadows/radii, intentional light/dark
-- **Icon:** `public/branding/banana-router-icon.svg|.png` — preserved aspect, not a placeholder illustration
-- **Flow:** `OPEN → SEE → UNDERSTAND → CONFIGURE → WORK` — Home greets `Good morning/afternoon/evening · What are you working on?` with 7 quick actions (Chat/Write/Analyze/Organize/Create/Research/Plan) and *Continue working*
+## AI Chat — clean editor style
 
-## App shell & global UI
+```
+BANANAROUTER
+────────────────────
+User
+What can you do with this project?
 
-- **Design tokens:** consistent spacing/typography (Inter / tracking-tight), `--radius-*`, `--shadow-sm/md/lg`, `--topbar-height:56px`, `--sidebar-width:272px / collapsed 72px`, `--content-max:1080px / --chat-max:760px`, transitions `cubic-bezier(0.16,1,0.3,1)` — no irregular gaps
-- **App shell:** `| BananaRouter | Search | Help | Settings |` top bar (56px, sticky, search pill 720px, `⌘K` hint, saving/Offline, notifications, avatar) + collapsible sidebar (headers, active `#FFFBEB` + banana ring, hover, badges, *Recent* + *Favorites*, tooltips when collapsed, mobile drawer) + main + optional right **BananaRouter AI** panel
-- **Global search** `Cmd+K` / `Shift+Cmd+F` — fuzzy partial across chats/docs/files/sheets/notes/tasks/mail/calendar/projects/folders; categorized, snippets, keyboard-nav, opens actual source
-- **Command palette** `Cmd/Ctrl+K` — New Chat/Document/Sheet/Note/Task/Folder, Search, Settings, Import/Export, Toggle dark mode… filter-as-you-type
-- **Home:** greeting + *What are you working on?* + pill quick actions + 3 CTA + *Continue working* (8 recent) + *Quick create* (6) + *Suggested for you* + *Workspace stats* (real counts) — not marketing
-- **Every route polished:** empty/loading/error states intentional; skeletons `shimmer`, document-style markdown, subtle motion (respects `prefers-reduced-motion`)
-
-## AI architecture
-
-- **Centralized service** `src/lib/ai/service.ts` — every tool (chat, document.*, sheet.*, note.*, task.*, email.*) via `executeAI()` (model selection, streaming, errors, retries, cancellation, token limits, context prep, logging w/o secrets)
-- **Central prompt registry** `src/lib/ai/prompts.ts` — one definition per tool (`system`, `userTemplate`, `permission`, `output`)
-- **Structured outputs** — e.g., `task.breakdown` returns validated JSON `[{title, description}]` before creating tasks
-- **Permissions** — `READ` / `SUGGEST` (preview) / `MODIFY` / `CREATE` / `DELETE` — bulk MODIFY/DELETE requires confirmation with preview
-- **Context** `AIContext` — `{currentView, selectedDocument, selectedFiles (max 4, truncated), selectedNote, selectedSpreadsheet, selectedTasks…}` — minimal, size-checked (`MAX_CONTEXT_CHARS=12k`), citations `Based on: …`
-- **Cost safety:** context checks, max tokens, chunking, “Large document — processed in sections”
-- **Rate limit:** 60 req/min per-IP + OpenRouter 429 → “rate limited — Retry” with backoff
-
-## Chat (document-style, not bubbles)
-
-- New chat, search, rename (list), delete, regenerate/retry, edit user message (truncate+resend), streaming with `AbortController`, markdown + code + copy/feedback
-- **Header:** `BananaRouter AI · Powered by OpenRouter` + Free Router badge + model selector
-- **Thread:** document flow (no bubbles) — *You* / *BananaRouter* sections, prose `15px/1.7`, divider per turn, `max-w:760px`
-- **Composer:** auto-growing textarea (≤220px), `Enter` send / `Shift+Enter` newline, drag-drop files as context chips, attach, Enhance prompt, token count, stop button
-- **Streaming:** *Jump to latest* when scrolled, thinking state `BananaRouter is thinking…` with banana dots
-- **Errors:** structured categories, redacted details (`[REDACTED]`), retryable
-- **Model:** `openrouter/free` default (Free Router), live catalog with free/paid badges
-
-## Workspace modules — all real, preview-before-apply, no mocks
-
-### Documents (Docs-style)
-File/Edit/Insert/Format/Tools-like toolbar, word/char count, rename/duplicate/export `.md`, headings/lists/checklists/tables/code/quotes/links via textarea+markdown, **AI** Rewrite/Summarize/Expand/Shorten/Fix grammar/Change tone/Continue/Outline/Create title — operates on **selection** if highlighted, otherwise whole doc — **preview** with Replace/Insert/Cancel, version snapshot + restore
-
-### Drive (files & folders)
-Folders, nested, breadcrumbs, rename/move/duplicate/star/trash/restore, sort, Grid/List, search, type icons, context menus — Import TXT/MD/JSON/CSV/PDF (metadata)/images (10 MB max), searchable text, status — Preview text/markdown, CSV 20 rows, JSON formatted, image, PDF metadata — **AI file analysis** only selected file, chunked if large — **Drag-and-drop** with visual indicator
-
-### Sheets
-Rows/cols, multiple sheets, editable cells, col/row resize, freeze header, search, sort/filter via AI, **CSV** Import→preview→detect→AI cleanup→convert→save — **AI** Summarize/Trends/Clean/Formula — preview before applying; destructive requires Apply/Cancel
-
-### Notes (Keep-style)
-Title/text/checklist/labels/colors/pin/archive/trash/search — **AI** Summarize/Organize/Turn into tasks/Expand/Rewrite/Convert to doc — all previewed
-
-### Tasks
-Title/description/due/priority/completion/lists/subtasks — **AI** “Break into tasks” validated JSON preview, Prioritize, Schedule, Summarize unfinished
-
-### Calendar
-Month/Week/Day, CRUD (title/description/start/end/timezone/location/color/reminder/recurrence), search, event colors — **AI planner** (“Create study schedule”) — generates ≤8 events, preview → Apply/Cancel
-
-### Mail (Gmail-style, local only)
-Inbox-style local drafts, Compose (To/CC/BCC/Subject/Body), Drafts/Sent, search/labels/star/archive — **AI** Draft/Rewrite/More professional/Shorter/Friendlier/Summarize/Extract actions — **Safety:** drafts are *local — not actually sent unless Gmail integration later with OAuth*
-
-### AI Toolbox
-Writing/Summarizer/Research/Brainstorm/Code/Study/Data/Document/Email/Planner/Translator/Formatter — each actually calls OpenRouter via central service
-
-### Templates & Memory
-Prompt templates with `{{variables}}`, visible editable deletable; workspace memory (“Prefer concise answers”), visible editable, only relevant sent
-
-### Projects
-Groups Chats+Docs+Sheets+Notes+Tasks+Files; contextual AI; act as Drive-style organization — Cross-app workflows: Chat→Document, Chat→Tasks, Document→Summary, Notes→Document, Spreadsheet→Report, Email→Task, File→Chat — real buttons
-
-### System
-- **File pipeline:** Upload→Validate→Extract→Normalize→Index→Store→Available to AI; shows status
-- **Large docs:** Chunk→Summarize relevant→Construct context (future RAG stubs: `DocumentChunk`, `EmbeddingProvider`…)
-- **Notifications:** “Document saved”, “Import complete”, “AI failed”, “Export complete” — no fake social
-- **Autosave:** ~600 ms debounce, `beforeunload` flush, `Saving… / Saved / Offline changes`
-- **Offline-first:** docs/notes/tasks/files/search usable without network; AI requires service
-- **Starred / Favorites**, **Trash** soft-delete + Restore/Delete forever + Undo, **Responsive** drawer/modal/scroll, **Accessibility** (keyboard, ARIA, focus, semantic, reduced-motion), **Performance** (debounced search, IndexedDB, content-visibility, lean 146 kB / 248 kB first load)
-
-## Tech stack
-Next.js 15.5 (App Router), React 19, TypeScript strict, Tailwind 3.4, `lucide-react`, `react-markdown` + `remark-gfm` + `rehype-highlight`, OpenRouter Chat Completions API
-
-## Requirements
-Node.js 20+ (tested 22.22.3) · OpenRouter key from https://openrouter.ai/keys
-
-## Install and run (localhost)
-
-```bash
-npm install
-cp .env.example .env.local
-# edit .env.local and set OPENROUTER_API_KEY
-npm run dev      # http://localhost:3000
-# or
-npm run build && npm run start
+BananaRouter
+I can inspect the available tools...
+────────────────────
 ```
 
-`localhost` = local Next.js UI + backend. AI still happens on OpenRouter’s servers. Onboarding (4 steps) appears once on first launch.
+`ChatDesktop.tsx` + `MessageBubble.tsx` (document-style, not big rounded bubbles) — `You` vs `BananaRouter` sections, `15px/1.7` prose, divider per turn, `max-w 720px`, actions (Copy/Regenerate/Retry) appear only on hover. `ErrorBanner` native: `OpenRouter request failed · Retry · Details`, no stack dump. Code blocks: highlight, copy, language, scroll. Markdown sanitized.
 
-## OpenRouter configuration
+Composer `MessageComposer`-inspired central control — `Ask BananaRouter…` auto-growing ≤180px, `Enter` send / `Shift+Enter` newline, drag-drop files become context chips, `+` attach, model hint, tokens, `Stop` aborts request gracefully. Streaming smooth, `Jump to latest` when scrolled, partial preserved.
 
-**Do not confuse with local models.** No Ollama / LM Studio / llama.cpp — never downloads or runs models.
+Model display subtle: `Free Router` or `openrouter/free` pill — click opens model selector. No giant model dashboard.
 
-### Server-side key (required, never client-side)
+## Tool-Centric Architecture
 
-**Recommended — env var:**
+```
+USER → BANANAROUTER → CONTEXT → TOOLS / MCP → OPENROUTER → MODEL → TOOL CALLS? → RESULTS → FINAL RESPONSE
+MODEL = orchestration · BANANAROUTER = policy/execution · TOOLS = capabilities · model never gets unrestricted system access
+```
+
+- **Registry** `src/lib/tools/types.ts` + `registry.ts` — centralized `ToolDefinition {id,name,description,inputSchema,permission,handler,source,enabled,group}`. Helpers: `getToolRegistry()`, `searchTools()`, `toOpenRouterTools()` (sends first 12 enabled as OpenAI-style `type:function`), `requiresApproval()`, localStorage `bananarouter:tool-enabled`.
+- **Built-ins** (genuinely useful only): `files.list|read|search|create`, `workspace.search|context`, `time.now`, `calc.evaluate`, `json.format` — groups Files/Search/Context/System/Text. No pointless tools.
+- **Tool Explorer** `ToolExplorer.tsx` — grouped by `Files/Search/System` + `MCP:*`, search, permission badge, enable/disable toggle, source label, `MODEL proposes → BANANAROUTER checks → TOOLS execute`.
+- **Web tooling** — architecture ready for web search/browser tool via MCP; `AI inference` separated from `external retrieval`; no fake web access if no provider.
+- **Tool search** — if many tools, only relevant subset sent; AI can `searchTools` / `tool_search` to discover.
+
+## Permissions & Approvals
+
+- **Permissions** `READ | WRITE | DELETE | NETWORK | SYSTEM` — `files.read = READ`, `files.create = WRITE`, deletion = `DELETE`, web = `NETWORK`, sensitive = `SYSTEM`.
+- **ApprovalDialog** `ApprovalDialog.tsx` — for `WRITE/DELETE/NETWORK/SYSTEM` shows: `Tool wants to: Delete 4 files` + args JSON + `Allow Once / Always Allow / Deny`. No silent destructive actions. User controls availability.
+- **Sandboxing** — permission checks server-side (`requestOpenRouter` + `/api/chat` validation), no arbitrary model code execution, `validateAndBuildMessages`, `validateModel`, file path + JSON validation, HTML sanitization.
+
+## MCP Architecture (Model Context Protocol)
+
+Abstraction for external tools — not hard-coded services.
+
+```
+MCP Server → Tools · Resources · Prompts → BananaRouter → OpenRouter
+```
+
+- **Types** `src/lib/mcp/types.ts` — `MCPServerConfig {id,name,transport,status,url|command,enabled}`, `MCPToolDef`, `MCPResource {uri,name,mimeType,serverId}`, `MCPPrompt`. Transports actually supported: `stdio` (backend), `sse`, `http` (streamable). No pretend.
+- **Manager** `src/lib/mcp/manager.ts` — `loadMcpServers()`/`saveMcpServers()` (`localStorage bananarouter:mcp-servers`), `add/update/remove`, `testMcpConnection()` (GET probe for http/sse, registers discovered tools via `registerMcpTool` as `mcp.<serverId>.<tool>`), `disableMcpToolsForServer()`. Credentials stored locally, never in prompts, never logged.
+- **UI** `MCPPanel.tsx` — Servers tab (`Name · ● Connected 12 tools / ○ Disabled`, Transport, Test/Edit/Remove, Enabled toggle) + Resources tab (`MCPResources.tsx` — Server/Resource/Type/Status, Open/Inspect/Use as context, only selected sent). Prompts visible where server provides them. No fake servers — only configured.
+- **Discovery** — on connect: discover tools/resources/prompts, validate schemas, register dynamically, allow per-tool disable. `searchTools()` keeps context small.
+
+## Context & Sessions
+
+- **Context system** `buildContextText(ctx)` — from `AIContext {currentView,selectedDocument,selectedFiles (max 4, truncated),selectedNote,selectedSpreadsheet,selectedTasks,selectedMessages}` + `MCP resources` + previous results. Minimal, relevant only; `truncateContext(12k)` + citations `Based on: …`.
+- **Window management** — large conversations/files/tool results handled via truncation/summarization/chunking, relevant selection, not blindly exceeding limit.
+- **Sessions** (not “conversations”) — `WorkspaceState.conversations` migrated as Sessions `{messages,context,toolUsage,attachments,metadata}`. Ops: New/Rename/Delete/Duplicate/Search. `SessionsPanel.tsx` slide-out style: Today/Yesterday/Older, search, duplicate/delete. Minimal, not giant sidebar.
+- **Files** `FilesPanel.tsx` — compact Files panel (not Drive clone): Browse/Search/Attach/Open/Delete, drag to chat → chips `filename type size`, preview (text/markdown JSON/table). AI uses selected files only when user explicitly attaches.
+- **Workflow history** — lightweight `ToolActivity.tsx` compact: `Using filesystem… Completed` with expand for `Tool name / Arguments / Result / Duration`, `Completed` etc., not raw logs unless clicked.
+
+## General AI Workflow Engine
+
+Reusable: `Trigger → Context → AI step → Tool step → Condition → Output`. Example user asks “Find TODOs and summarize”: AI interprets → `filesystem.search` → results → AI analyzes → final answer. User never manually configures steps. Orchestration server-side where appropriate; tool calling where model supports it (`tools` forwarded to OpenRouter, `tool_call` → approval → execution → result returned to model → continue). Capability awareness via model metadata (streaming/tool-calling/vision/context length).
+
+## OpenRouter Integration (AI Engine)
+
+BananaRouter itself is **not a model**. Architecture:
+
+```
+BananaRouter UI → BananaRouter backend → OpenRouter API → Selected model → Response → BananaRouter
+```
+
+- `src/lib/server/openrouter.ts` + `src/app/api/chat/route.ts` — validates `messages/model/size`, rate-limits 60/min/IP, proxies to `https://openrouter.ai/api/v1/chat/completions` with `Authorization: Bearer <key>`, `HTTP-Referer`, `X-Title`, supports `tools` + `tool_choice` passthrough (where model supports function calling), streams SSE or JSON, handles `stream` / `choices[0].delta.content` + `tool_calls`, structured errors (`missing_api_key 401`, `rate_limited 429`, `context_limit` etc.) with `category/retryable`, secrets redacted via `redactSecrets()`. No local models / Ollama / downloads.
+- `src/lib/client/api.ts` `streamChat()` — sends `tools` from `toOpenRouterTools()` when enabled, handles `data: [DONE]`, `usage`, `tool_calls` deltas, abort, partial preservation.
+- Settings: model picker live catalog from `https://openrouter.ai/api/v1/models` (free/paid, context, provider, pricing) fallback to config; fallback behavior configurable, never silently moves to paid when free-only.
+- Attachments: ` {id,name,type,size,location,textContent,metadata}` abstraction for future workflows.
+
+## Settings — minimal native preferences
+
+`SettingsDesktop.tsx` — sections only: **AI / OpenRouter** (API key server-side, default model `openrouter/free`, Free Router, temperature, maxTokens) · **Tools** (via Tool Explorer) · **MCP** (via MCP panel Add/Edit/Enable/Remove/Test) · **Appearance** (Dark/Light, same structure) · **Storage** (Export/Import/Clear, local sessions/preferences/metadata) · **Developer** (off by default). No pricing/billing/marketing.
+
+- **MCP Settings** — Add server (name/transport/url|command+args/env), enable/disable, remove, test connection, status, tools count. Sensitive env not echoed in plaintext.
+- **Developer Mode** — AI requests, tool calls, MCP status, model, duration, tokens if available, backend diagnostics. `RequestInspector` shows sanitized: model, message count, input/output size, tools available/used, duration, HTTP status — **never** API key / Authorization. Emits `bananarouter:request` event from chat.
+
+## Security & Data
+
+- **Reviews**: `redactSecrets()` everywhere, `validateModel` regex `^[A-Za-z0-9._:/-]+$`, `MAX_MESSAGES 200`, `MAX_CONTENT_LENGTH 100k`, `MAX_BODY_BYTES 1.5M`, file 10 MB, JSON shape checks, no `eval`.
+- **Isolation**: `MODEL` ≠ `BANANAROUTER` ≠ `TOOLS`.
+- **Local data**: `localStorage openrouter-workspace-v2` + `IndexedDB openrouter-chat/workspaces/workspace-v2` migrated, autosave 600 ms `beforeunload` flush, `Saving…/Saved/Offline`. Never store `OPENROUTER_API_KEY` in browser, never MCP creds insecurely.
+- **Observability**: `ApiError {code,message,detail,status,category,retryable}`, server logs INFO/WARN/ERROR/DEBUG (DEBUG off by default), redacted.
+
+## Local Data & Migration
+
+Stored locally: Sessions, preferences, workspace metadata, tool config where safe. Old `conversations` auto-migrated to Sessions; files/docs retained but not shown as Drive clone unless user opens Files. No secret leakage. MCP credentials not stored insecurely.
+
+## Environment
+
+Provide `.env.example` (no real secret). If key was previously in repo, remove and rotate.
 
 ```ini
-# .env.local (git-ignored, never committed)
-OPENROUTER_API_KEY=sk-or-v1-your-real-key-here
+# .env.example — copy to .env.local (git-ignored)
+OPENROUTER_API_KEY=
 OPENROUTER_MODEL=openrouter/free
 APP_NAME=BananaRouter
 APP_DESCRIPTION=BananaRouter — An AI-powered workspace built around OpenRouter.
@@ -139,144 +136,91 @@ APP_URL=http://localhost:3000
 OPENROUTER_TEMPERATURE=0.7
 OPENROUTER_TIMEOUT_MS=120000
 OSS_APP_VERSION=1.0.0
+# MCP servers configured via UI (MCP Settings) -> localStorage bananarouter:mcp-servers
 ```
 
-**Alternative — Settings UI (dev convenience):**
+**Centralized** `src/lib/server/config.ts` (`DEFAULT_MODEL=openrouter/free`, `DEFAULT_APP_NAME=BananaRouter`, `getRuntimeApiKey()`), MCP separate from UI state.
 
-`Settings → AI / OpenRouter` → paste key → **Save to server**. POSTs to `/api/settings`, writes `.env.local` server-side and is used only by backend; never written to browser. In production use real env vars or secret store. If exposed, rotate at https://openrouter.ai/keys.
+**Icon location:** `public/branding/banana-router-icon.png` or `.svg` — extremely easy to place; fallback `B` if missing.
 
-### Default model
-
-- `src/lib/server/config.ts` → `DEFAULT_MODEL = "openrouter/free"` (free routing to best available free model, response includes `model`)
-- Overridable by `OPENROUTER_MODEL` env or Settings → model picker (live catalog from `https://openrouter.ai/api/v1/models` with free/paid badges, context length, refresh)
-- Never silently switches to paid when you chose free-only; status shows fallback and live source
-
-### Environment variables
-
-| Variable | Default | Description |
-|---|---|---|
-| `OPENROUTER_API_KEY` | — | **Required.** Server only. Never `NEXT_PUBLIC_`. |
-| `OPENROUTER_MODEL` | `openrouter/free` | Default router; also `openrouter/auto`. |
-| `APP_NAME` | `BananaRouter` | Updates title, sidebar, about. |
-| `APP_DESCRIPTION` | (see .env.example) | Meta + about. |
-| `APP_URL` / `HTTP_REFERER` | `http://localhost:3000` | Sent as `HTTP-Referer` to OpenRouter. |
-| `OPENROUTER_TEMPERATURE` | `0.7` | Default temp (UI can override per request). |
-| `OPENROUTER_TIMEOUT_MS` | `120000` | Server timeout for OpenRouter. |
-| `OSS_APP_VERSION` | `1.0.0` | Shown in diagnostics. |
-
-### Branding env
-
-```ini
-APP_NAME=BananaRouter
-APP_DESCRIPTION=BananaRouter — An AI-powered workspace built around OpenRouter.
-```
-
-Icon at `public/branding/banana-router-icon.svg` / `.png` — preserved via `object-contain`.
-
-## Backend API (server-side only talks to OpenRouter)
-
-- `POST /api/chat` — validates `messages`/`model`/size, rate-limits 60/min/IP, proxies to `https://openrouter.ai/api/v1/chat/completions` with `Authorization: Bearer <key>`, `HTTP-Referer`, `X-Title`, streams SSE or JSON; structured errors (`missing_api_key` 401, `invalid_request` 400, `rate_limited` 429, `context_limit`, `insufficient_credits`…), secrets redacted
-- `GET / POST /api/settings` — status & server-side save (validates model format)
-- `POST /api/test` — verifies key + model with one-word ping
-- `GET /api/models` — live catalog from `https://openrouter.ai/api/v1/models`, falls back to config
-- `GET /api/usage` — `https://openrouter.ai/api/v1/auth/key` limit/usage/free-tier
-
-All OpenRouter calls include `Authorization`, `Content-Type`, `HTTP-Referer`, `X-Title`. Errors centralized with `category` + `retryable`.
-
-## Project structure
-
-```
-.env.example                # placeholder only (no real key)
-public/branding/            # banana-router-icon.svg/.png + README (icon location)
-public/manifest.json        # PWA: BananaRouter, theme #F6C446, icons /branding/...
-next.config.mjs             # reactStrictMode, poweredByHeader:false
-tailwind.config.ts          # BananaRouter tokens
-src/
-  app/
-    layout.tsx              # metadata BananaRouter — AI Workspace, favicon /branding
-    page.tsx                # WorkspaceProvider + WorkspaceShell
-    globals.css             # BananaRouter tokens, prose, skeleton, reduced-motion
-    api/ chat/settings/test/models/usage
-  components/
-    branding/ BananaLogo.tsx # svg→png→“B” fallback #F6C446
-    shell/  TopBar, SidebarNav, GlobalSearch, CommandPalette, AssistantPanel, WorkspaceShell, Onboarding
-    workspace/views/ Home, Chat, Documents, Drive, Sheets, Mail, Calendar, Tasks, Notes, AITools, Projects, Starred, Trash, Settings
-    chat/   ChatPanel, MessageBubble (document-style), Composer, MarkdownMessage, CodeBlock, ErrorBanner
-    settings/ ModelSelector (Free Router)
-    ui/     ConfirmDialog
-  lib/
-    workspace/ types.ts, store.ts, search.ts, context.tsx (CRUD, autosave)
-    ai/      prompts.ts, service.ts
-    server/  config.ts (BananaRouter defaults), openrouter.ts, openrouterMeta.ts
-    client/  api.ts (redaction), storage.ts, settings.ts, utils.ts
-    shared/  types.ts
-  tests/    security.test.js, unit.test.js, api.test.js (node --test)
-```
-
-## Storage
-
-- Browser: `localStorage` key `openrouter-workspace-v2` (JSON cache) + IndexedDB `openrouter-chat` / `workspaces` / `workspace-v2` for large workspaces; legacy auto-migrated
-- Autosave 600 ms debounce, `beforeunload` flush, `Saving… → Saved`
-- Offline: UI works without network; AI requires service
-- Backup: `Settings → Workspace data → Export` → `{app, version, exportedAt, workspace:{…}}` — **never includes API key**; import validates shape, no `eval`
-
-## AI architecture details
-
-User → Web app → Server API (`/api/chat`) → OpenRouter → Model → Streamed SSE → App — browser never sees secret — Prompt registry `getPrompt(toolId)` — Context `buildContextText(ctx)` truncated per source (doc 8k, file 4k, spreadsheet 50 cells, tasks, events, last 6 messages); `truncateContext(12k)` + citations — Chunking for large docs
-
-## Security
-
-- Key read only via `getRuntimeApiKey()` server-side; `isApiKeyConfigured()` guards routes; never in `NEXT_PUBLIC_`, bundles, `localStorage`, IndexedDB, URLs, export JSON, debug, logs, or error details — `redactSecrets()` replaces `sk-or-v…`/`Bearer …` with `[REDACTED]`
-- `OPENROUTER_API_KEY` not in client `process.env` (Next.js excludes it)
-- Validation: `MAX_MESSAGES=200`, `MAX_CONTENT_LENGTH=100k`, `MAX_BODY_BYTES=1.5M`, model regex `^[A-Za-z0-9._:/-]+$`
-- Import validation: `JSON.parse` only, shape checks, no `eval`/`Function`
-- Markdown: `react-markdown` (no raw HTML), links `noopener noreferrer nofollow`, code `rehype-highlight` ignoreMissing, HTML sanitized
-- Privacy indicators: “Only selected context is sent”, “Powered by OpenRouter” badges, Developer Mode hidden (n/a)
-- Rate limit + secrets-tested (`npm test` checks bundles don’t contain `sk-or-v1-…` or real key)
-
-## Future Google Integration (ready, not faked)
-
-```ts
-type IntegrationStatus = { id:"drive"|"docs"|"sheets"|"gmail"|"calendar", status:"not_connected"|"connected"|"unavailable", label:string, description:string }
-```
-
-UI shows **Not connected** for Drive/Docs/Sheets/Gmail — architecture ready for OAuth (server-side tokens, per-scope permissions). Calendar already matches Google shape. No fake sync/sending.
-
-## Commands
+## Startup
 
 ```bash
-npm install        # install
-npm run dev        # dev (localhost:3000)
-npm run build      # production build (checks types, collects routes)
-npm run start      # serve production build
-npm run typecheck  # tsc --noEmit
-npm test           # node --test (22 tests: security + unit + api)
+npm install
+cp .env.example .env.local
+# edit .env.local → set OPENROUTER_API_KEY=sk-or-v1-... (from https://openrouter.ai/keys)
+npm run dev      # http://localhost:3000 (dark desktop immediately)
+# or
+npm run build && npm run start
+npm run typecheck # tsc --noEmit
+npm test          # node --test (22 tests)
 ```
 
-## Branding (central)
+First run: set OpenRouter key (optionally MCP), then immediately type in AI workspace — no 10-step tutorial. Subtle BananaRouter icon while initializing.
 
-`APP_NAME`, `APP_DESCRIPTION` in `.env.example` / `src/lib/server/config.ts` — changing `APP_NAME` updates title, sidebar, top bar, metadata, about. `DEFAULT_MODEL` defines router fallback. `BRAND=BananaRouter, INFRA=OpenRouter`.
+- **Shortcuts:** `Cmd/Ctrl+Space` launcher, `Cmd/K` search, `Cmd/N` new session, `Cmd/Shift+P` command palette, `Cmd/,` settings, `Esc` close.
+- **Command palette:** New Session, Search, Open Files/Tools/MCP/Settings, Switch Model, Toggle Theme, Developer Mode.
+- **Drag-drop:** drop file into chat → contextual attachment chips.
 
-## Testing
+## Typo / Icons / Theme
 
-```bash
-npm run build      # must pass (146 kB / 248 kB)
-npm test           # 22 tests
+System font, native desktop feel, small text, comfortable `max-w 720px`. One icon library `lucide-react`, small/subtle. Dark default (`Background #09090b / Surface #121214 / Elevated #1a1a1e`), light mode same structure.
+
+## No Commercial Language
+
+Uses: `New Session, Tools, Models, Settings, Files, Connect` — not “Supercharge your productivity.” No pricing/subscriptions/billing/plans/upgrade/testimonials/logos/enterprise.
+
+## No Fake Data
+
+Everything from actual state: sessions/files/tools/resources/notifications. No generated fake chats/files/MCP servers/tools/stats/integrations. Counts shown are real (`state.conversations.length`, `state.files.length`, `registry.length`).
+
+## Technical Language
+
+Workspace / Session / Tools / Files / Context — not corporate fluff. Persona: helpful, direct, intelligent, calm, technical when necessary.
+
+## Visual Hierarchy
+
+90% content, 8% controls, 2% branding — app disappears while working.
+
+## What is Fully Functional
+
+- OpenRouter API streaming, sessions (new/rename/delete/duplicate/search, Today/Yesterday/Older), minimal history slide-out
+- Files (browse/search/attach/open/delete, upload 10 MB, preview, drag-drop, only selected sent)
+- Context (relevant only, truncated 12k, citations, large handling)
+- Tool registry + built-ins (Files/Search/System/Text) + MCP architecture (servers/resources/prompts discovery, transports stdio/sse/http, per-tool enable)
+- Permissions (`READ/WRITE/DELETE/NETWORK/SYSTEM`) + approvals (`Allow Once/Always/Deny`)
+- General workflow engine + orchestration (AI selects tools, calls, reads results, continues)
+- Tool calling where model supports it (tools passed to OpenRouter, tool_calls handling prepared)
+- MCP server manager (add/edit/enable/disable/remove/test, status ● Connected / ○ Disabled, tools count)
+- Model selection (Free Router `openrouter/free`, live catalog, fallback configurable)
+- Dark-first polished minimal desktop, window system (open/close/minimize/resize/focus), launcher `Cmd+Space`, command palette, shortcuts, drag-drop, copy/regenerate/retry, code highlight, markdown sanitized, streaming smooth with abort, 120 kB bundle, fast startup with subtle icon
+- Secure config (`APP_NAME=BananaRouter`), env safety, data migration, request inspector (sanitized)
+
+## What Remains Intentionally Unimplemented
+
+- Real remote MCP stdio spawning requires BananaRouter backend process — stdio servers configured via UI show guidance and require backend; http/sse probe actually tests connectivity but full tool execution is stubbed to local registry (no fake remote tool results shown as real unless server actually responds)
+- Web-search/browser tools are prepared architecturally but require a configured provider (no pretend web access)
+- Vector DB / paid embeddings / unlimited hidden memory — stubbed interfaces only
+- Google Workspace clones (Docs/Sheets/Gmail/Calendar/Drive/Tasks/Keep) removed — not rebuilt; existing stored docs/files still migrated but not shown as separate apps
+- Billing/pricing/subscriptions — private tool, not added
+
+## Final Architecture Summary
+
+```
+DesktopBackground → TopSystemBar → DesktopShell
+  ├─ AI Workspace (ChatDesktop + MessageBubble + Composer)
+  ├─ Windows: SessionsPanel / FilesPanel / ToolExplorer / MCPPanel+MCPResources / SettingsDesktop (+Developer+RequestInspector)
+  ├─ Launcher (Cmd+Space) + CommandPalette (Cmd+Shift+P)
+  └─ ToolActivity + ApprovalDialog (permissions)
+
+Context: AIContext + truncate(12k) + citations
+Tools: Registry (builtin + mcp.<server>.<tool>) + ToolExplorer + Approval
+MCP: Manager (load/save/test) + discovery → registerMcpTool
+OpenRouter: /api/chat ↔ openrouter.ts ↔ streamChat ↔ executeAI
+
+Storage: localStorage + IndexedDB (openrouter-chat) 600ms autosave
+Security: redactSecrets, validateModel, isolation MODEL≠BANANAROUTER≠TOOLS, no secret in bundle/storage/export
+Config: .env.example (OPENROUTER_API_KEY, OPENROUTER_MODEL=openrouter/free, APP_NAME=BananaRouter) + public/branding/icon
 ```
 
-Live OpenRouter round-trip requires real key. Without it UI shows structured errors: `missing_api_key` → “OpenRouter API key is missing…”, `rate_limited`, `context_limit`… with Retry when `retryable`.
-
-## No local models
-
-Never downloads/hosts/runs local models — no Ollama, LM Studio, llama.cpp… search repo for those strings — only this documentation stating they’re absent.
-
-## Final checklist (verified)
-
-- [x] Builds (`npm run build` 146 kB) and starts, no console errors on empty workspace
-- [x] BananaRouter everywhere (title, manifest, PWA, sidebar, home, chat header, onboarding); icon at `public/branding/` with `object-contain` + “B” fallback not banana art
-- [x] Tokens consistent, shell `| BananaRouter | Search | Help | Settings |` collapsible (272→72), top bar 56px, Home greeting + 7 quick actions + Continue working
-- [x] Chat document-style, `BananaRouter AI · Powered by OpenRouter`, composer auto-grow/drag-drop, Enter send, thinking state, Jump to latest, Free Router
-- [x] Documents/Drive/Sheets/Notes/Tasks/Calendar/Mail/Projects with preview-before-apply, confirmations, right AI panel, context indicators
-- [x] Microinteractions/loading/empty/dark/light intentionally designed, responsive, accessibility (ARIA, focus, keyboard, reduced-motion), toasts/modals/context menus
-- [x] Autosave, offline, OpenRouter backend preserved, security validated, Google-style workflow, integrations “Not connected”
-- [x] 4-step onboarding, versioned settings, import safety, tool safety, final visual/functional/brand QA
+*BananaRouter is a private power tool for two technical users — beautiful because simple, powerful because of its architecture, never trying to sell anything.*

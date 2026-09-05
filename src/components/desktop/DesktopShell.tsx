@@ -29,7 +29,7 @@ export function DesktopShell() {
   const [windows, setWindows] = useState<Record<WindowId, boolean>>({ sessions: false, files: false, tools: false, mcp: false, settings: false, dev: false });
   const [focused, setFocused] = useState<WindowId | null>(null);
   const [connection, setConnection] = useState<"connected" | "offline" | "checking">("checking");
-  const [attachedIds, setAttachedIds] = useState<string[]>([]);
+  const [attachedIds, setAttachedIds] = useState<string[]>([]); // shared file context
 
   useEffect(() => {
     const s = loadSettings();
@@ -122,42 +122,17 @@ export function DesktopShell() {
         connectionStatus={connection}
       />
 
-      {/* Desktop area */}
+      {/* Desktop area — calm, centered questioning dashboard */}
       <div className="relative flex flex-1 overflow-hidden">
-        {/* Central AI workspace — takes most space, window-like but not floating */}
-        <div className="flex flex-1 flex-col p-2 md:p-3 gap-2">
-          <div className="flex flex-1 overflow-hidden rounded-xl border border-white/10 bg-[#121214] shadow-xl">
-            <div className="flex flex-1 flex-col">
-              {/* subtle header for chat */}
-              <div className="flex h-8 shrink-0 items-center gap-2 border-b border-white/5 bg-white/[0.02] px-3 text-xs">
-                <span className="flex items-center gap-1.5 text-zinc-300">
-                  <MessageSquare size={12} /> AI Workspace
-                </span>
-                <span className="ml-auto flex items-center gap-1">
-                  <button onClick={() => openWindow("sessions")} className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
-                    Sessions
-                  </button>
-                  <button onClick={() => openWindow("files")} className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
-                    Files
-                  </button>
-                  <button onClick={() => openWindow("tools")} className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs hover:bg-white/10">
-                    Tools
-                  </button>
-                  <button onClick={handleNewSession} className="rounded-full bg-white text-black px-2.5 py-1 text-xs font-medium hover:bg-zinc-200">
-                    New session
-                  </button>
-                </span>
-              </div>
-              <ChatDesktop sessionId={activeSession} onNewTitle={(id) => setActiveSession(id)} />
-            </div>
-          </div>
-          {/* subtle footer status */}
-          <div className="hidden md:flex items-center justify-between px-2 text-[11px] text-zinc-500">
-            <span>90% content · 8% controls · 2% branding · {state.conversations.length} sessions · {state.files.length} files · {getToolRegistry().length} tools</span>
-            <span>
-              {attachedIds.length > 0 ? `${attachedIds.length} file(s) attached as context` : "Only selected context is sent to OpenRouter"}
-            </span>
-          </div>
+        {/* Central — calm, no chrome */}
+        <div className="flex flex-1 flex-col min-h-0">
+          <ChatDesktop
+            sessionId={activeSession}
+            onNewTitle={(id) => setActiveSession(id)}
+            onOpenSessions={() => openWindow("sessions")}
+            attachedIds={attachedIds}
+            setAttachedIds={setAttachedIds}
+          />
         </div>
 
         {/* Floating windows */}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useWorkspace } from "@/lib/workspace/context";
-import { loadSettings, saveSettings } from "@/lib/client/settings";
+import { loadSettings } from "@/lib/client/settings";
 import { DEFAULT_SETTINGS } from "@/lib/client/settings";
 import { ApiError, ChatMessage, Conversation } from "@/lib/shared/types";
 import { generateTitle } from "@/lib/client/utils";
@@ -12,10 +12,22 @@ import { buildContextText } from "@/lib/ai/service";
 import { AIContext } from "@/lib/workspace/types";
 import { MessageBubble } from "@/components/chat/MessageBubble";
 import { ErrorBanner } from "@/components/chat/ErrorBanner";
-import { ArrowDown, Square, ArrowUp, Copy, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowDown, Square, ArrowUp, Sparkles, Paperclip } from "lucide-react";
 
-export function ChatDesktop({ sessionId, onNewTitle }: { sessionId: string | null; onNewTitle?: (id: string) => void }) {
-  const { state, setConversations, addNotification } = useWorkspace();
+export function ChatDesktop({
+  sessionId,
+  onNewTitle,
+  onOpenSessions,
+  attachedIds: attachedIdsProp,
+  setAttachedIds: setAttachedIdsProp,
+}: {
+  sessionId: string | null;
+  onNewTitle?: (id: string) => void;
+  onOpenSessions?: () => void;
+  attachedIds?: string[];
+  setAttachedIds?: (v: string[]) => void;
+}) {
+  const { state, setConversations } = useWorkspace();
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [activeId, setActiveId] = useState<string | null>(sessionId);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -28,7 +40,9 @@ export function ChatDesktop({ sessionId, onNewTitle }: { sessionId: string | nul
   const scrollRef = useRef<HTMLDivElement>(null);
   const shouldAutoScroll = useRef(true);
   const [showJump, setShowJump] = useState(false);
-  const [attachedIds, setAttachedIds] = useState<string[]>([]);
+  const [attachedIdsInternal, setAttachedIdsInternal] = useState<string[]>([]);
+  const attachedIds = attachedIdsProp ?? attachedIdsInternal;
+  const setAttachedIds = setAttachedIdsProp ?? setAttachedIdsInternal;
 
   useEffect(() => {
     setSettings(loadSettings());
@@ -71,7 +85,6 @@ export function ChatDesktop({ sessionId, onNewTitle }: { sessionId: string | nul
       setError(null);
       setStreaming("");
       streamedRef.current = "";
-      const started = Date.now();
       let acc = "";
       const ctxText = buildContextText(buildAIContext());
       const systemWithContext = ctxText ? `${settings.systemPrompt}\n\nWorkspace context:\n${ctxText.slice(0, 4000)}` : settings.systemPrompt;
@@ -101,6 +114,7 @@ export function ChatDesktop({ sessionId, onNewTitle }: { sessionId: string | nul
             setStreaming("");
             setIsGenerating(false);
             streamedRef.current = "";
+            window.dispatchEvent(new CustomEvent("bananarouter:request", { detail: { model, durationMs: Date.now() - Date.now(), status: 200, messageCount: msgs.length, inputSize: JSON.stringify(msgs).length, outputSize: acc.length, toolsAvailable: 8 } } as any));
           },
           onError: (err) => {
             if (token !== tokenRef.current) return;
@@ -164,42 +178,127 @@ export function ChatDesktop({ sessionId, onNewTitle }: { sessionId: string | nul
   const messages = active?.messages ?? [];
   const showStreaming = isGenerating && streaming.length > 0;
 
-  // Empty state minimal
+  // --- Questioning dashboard: calm, human, one core action ---
   if (!active || (messages.length === 0 && !isGenerating)) {
+    const greeting = (() => {
+      const h = new Date().getHours();
+      if (h < 12) return "Good morning";
+      if (h < 18) return "Good afternoon";
+      return "Good evening";
+    })();
+    const recent = [...state.conversations].sort((a, b) => b.updatedAt - a.updatedAt).slice(0, 8);
+    const grouped = (() => {
+      const now = new Date();
+      const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      const startYesterday = startToday - 86400000;
+      const today = recent.filter((c) => c.updatedAt >= startToday);
+      const yesterday = recent.filter((c) => c.updatedAt >= startYesterday && c.updatedAt < startToday);
+      const older = recent.filter((c) => c.updatedAt < startYesterday);
+      return { today, yesterday, older };
+    })();
+
     return (
-      <div className="flex h-full flex-col bg-[#121214]">
-        <div className="flex flex-1 items-center justify-center p-6">
-          <div className="w-full max-w-[640px] text-center">
-            <div className="mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-white/5 border border-white/10">
-              <Sparkles size={16} className="text-zinc-400" />
+      <div className="flex h-full flex-col overflow-y-auto bg-[#09090b]">
+        <div className="flex flex-1 flex-col items-center px-4 py-10 md:py-16">
+          <div className="w-full max-w-[680px]">
+            {/* small identity */}
+            <div className="mb-8 flex items-center gap-2 text-xs text-zinc-500">
+              <span className="flex h-6 w-6 items-center justify-center rounded-md border border-white/10 bg-white/[0.04]">
+                <Sparkles size={12} className="text-zinc-400" />
+              </span>
+              <span className="font-medium tracking-tight text-zinc-300">BananaRouter</span>
+              <span className="text-zinc-600">·</span>
+              <span>{greeting}</span>
             </div>
-            <h1 className="text-sm font-medium text-zinc-100">New session</h1>
-            <p className="mt-1 text-xs text-zinc-500">Ask anything. Attach files as context when needed. Tools are available when you need them.</p>
-            <div className="mt-6 grid grid-cols-1 gap-2 text-left">
-              {[
-                "Summarize my project files and find TODOs.",
-                "Search the workspace and explain what changed yesterday.",
-                "Take these notes and create a structured plan.",
-              ].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setDraft(p)}
-                  className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-left text-xs text-zinc-300 hover:bg-white/10"
-                >
-                  {p}
-                </button>
-              ))}
+
+            <h1 className="text-[26px] md:text-[30px] font-[380] tracking-tight text-zinc-100 leading-tight">What do you want to figure out?</h1>
+            <p className="mt-2 text-sm leading-6 text-zinc-500">Ask anything — we’ll keep it simple.</p>
+
+            {/* Big question box */}
+            <div className="mt-6">
+              <Composer draft={draft} setDraft={setDraft} onSend={handleSend} onStop={handleStop} isGenerating={isGenerating} model={settings.model} attachedIds={attachedIds} setAttachedIds={setAttachedIds} large />
+            </div>
+
+            {/* Subtle suggestions — natural language */}
+            <div className="mt-4">
+              <div className="text-xs text-zinc-500 mb-2">Try</div>
+              <div className="flex flex-wrap gap-2">
+                {["Explain this code in plain language", "Help me plan this project", "Analyze these files and find issues"].map((p) => (
+                  <button key={p} onClick={() => setDraft(p)} className="rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs text-zinc-400 hover:bg-white/10 hover:text-zinc-200 transition">
+                    “{p}”
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Recent — minimal, underneath */}
+            <div className="mt-10">
+              <div className="flex items-baseline justify-between">
+                <h2 className="text-xs font-medium tracking-wide text-zinc-300">Recent</h2>
+                {recent.length > 0 && onOpenSessions && (
+                  <button onClick={onOpenSessions} className="text-xs text-zinc-500 hover:text-zinc-300">
+                    See all
+                  </button>
+                )}
+              </div>
+
+              {recent.length === 0 ? (
+                <div className="mt-3 rounded-xl border border-dashed border-white/10 bg-white/[0.02] px-4 py-6 text-center">
+                  <p className="text-xs text-zinc-500">Nothing here yet — your questions will show up here.</p>
+                </div>
+              ) : (
+                <div className="mt-3 space-y-4">
+                  {grouped.today.length > 0 && (
+                    <div>
+                      <div className="mb-1.5 text-[11px] uppercase tracking-widest text-zinc-600">Today</div>
+                      <div className="space-y-1">
+                        {grouped.today.map((c) => (
+                          <button key={c.id} onClick={() => onNewTitle?.(c.id)} className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-white/[0.05] transition">
+                            <span className="flex-1 truncate text-sm text-zinc-300">{c.title || "Untitled question"}</span>
+                            <span className="text-[11px] text-zinc-600">{new Date(c.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {grouped.yesterday.length > 0 && (
+                    <div>
+                      <div className="mb-1.5 text-[11px] uppercase tracking-widest text-zinc-600">Yesterday</div>
+                      <div className="space-y-1">
+                        {grouped.yesterday.map((c) => (
+                          <button key={c.id} onClick={() => onNewTitle?.(c.id)} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-white/[0.05] transition">
+                            <span className="flex-1 truncate text-sm text-zinc-300">{c.title || "Untitled question"}</span>
+                            <span className="text-[11px] text-zinc-600">{new Date(c.updatedAt).toLocaleDateString()}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {grouped.older.length > 0 && (
+                    <div>
+                      <div className="mb-1.5 text-[11px] uppercase tracking-widest text-zinc-600">Earlier</div>
+                      <div className="space-y-1">
+                        {grouped.older.map((c) => (
+                          <button key={c.id} onClick={() => onNewTitle?.(c.id)} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left hover:bg-white/[0.05] transition">
+                            <span className="flex-1 truncate text-sm text-zinc-300">{c.title || "Untitled question"}</span>
+                            <span className="text-[11px] text-zinc-600">{new Date(c.updatedAt).toLocaleDateString()}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
-        {/* Composer even on empty */}
-        <Composer draft={draft} setDraft={setDraft} onSend={handleSend} onStop={handleStop} isGenerating={isGenerating} model={settings.model} attachedIds={attachedIds} setAttachedIds={setAttachedIds} />
+        <div className="px-4 py-3 text-center text-[11px] tracking-wide text-zinc-600">Private workspace · calm, fast, yours</div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col bg-[#121214]">
+    <div className="flex h-full flex-col bg-[#09090b]">
       <div ref={scrollRef} onScroll={handleScroll} className="relative flex-1 overflow-y-auto">
         <div className="mx-auto max-w-[720px] px-4 py-8">
           <div className="space-y-6">
@@ -266,6 +365,7 @@ function Composer({
   model,
   attachedIds,
   setAttachedIds,
+  large,
 }: {
   draft: string;
   setDraft: (v: string) => void;
@@ -275,6 +375,7 @@ function Composer({
   model: string;
   attachedIds: string[];
   setAttachedIds: (v: string[]) => void;
+  large?: boolean;
 }) {
   const { state } = useWorkspace();
   const canSend = draft.trim().length > 0 && !isGenerating;
@@ -284,13 +385,13 @@ function Composer({
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, large ? 160 : 180)}px`;
     }
-  }, [draft]);
+  }, [draft, large]);
 
   return (
     <div
-      className="border-t border-white/10 bg-[#0f0f10] p-3"
+      className={large ? "" : "border-t border-white/10 bg-[#0f0f10] p-3"}
       onDragOver={(e) => {
         e.preventDefault();
         setDragOver(true);
@@ -299,15 +400,9 @@ function Composer({
       onDrop={(e) => {
         e.preventDefault();
         setDragOver(false);
-        const files = Array.from(e.dataTransfer.files);
-        if (files.length) {
-          // create local file entries as context only
-          // For desktop minimal, we just keep names as pending attachments — user must have files in Files panel to select
-          // Instead we prompt to import via Files
-        }
       }}
     >
-      <div className="mx-auto max-w-[720px]">
+      <div className={`mx-auto ${large ? "max-w-none" : "max-w-[720px]"}`}>
         {attachedIds.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-1">
             {attachedIds.map((id) => {
@@ -326,8 +421,8 @@ function Composer({
             </button>
           </div>
         )}
-        {dragOver && <div className="mb-2 rounded-lg border border-dashed border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">Drop files to attach as context (file must exist in Files panel)</div>}
-        <div className={`flex items-end gap-2 rounded-xl border bg-[#1a1a1e] px-3 py-2 ${dragOver ? "border-amber-500/50" : "border-white/10"}`}>
+        {dragOver && <div className="mb-2 rounded-lg border border-dashed border-amber-500/50 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">Drop files to use as context</div>}
+        <div className={`flex flex-col gap-2 rounded-2xl border bg-[#141416] px-3 py-3 ${dragOver ? "border-amber-500/50" : "border-white/10"} ${large ? "min-h-[110px] shadow-sm" : ""}`}>
           <textarea
             ref={textareaRef}
             value={draft}
@@ -338,34 +433,34 @@ function Composer({
                 if (canSend) onSend(draft);
               }
             }}
-            placeholder="Ask BananaRouter…"
-            rows={1}
-            className="max-h-[180px] min-h-[44px] flex-1 resize-none bg-transparent py-2 text-sm leading-6 text-zinc-100 placeholder:text-zinc-500 outline-none"
+            placeholder="Ask anything..."
+            rows={large ? 3 : 1}
+            className={`w-full resize-none bg-transparent text-[15px] leading-6 text-zinc-100 placeholder:text-zinc-500 outline-none ${large ? "min-h-[64px]" : "max-h-[180px] min-h-[44px]"}`}
           />
-          {isGenerating ? (
-            <button onClick={onStop} className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-700 text-white hover:bg-zinc-600">
-              <Square size={12} fill="currentColor" />
-            </button>
-          ) : (
-            <button
-              disabled={!canSend}
-              onClick={() => onSend(draft)}
-              className={`flex h-8 w-8 items-center justify-center rounded-full ${canSend ? "bg-amber-400 text-black hover:bg-amber-300" : "bg-white/10 text-zinc-500"}`}
-            >
-              <ArrowUp size={14} />
-            </button>
-          )}
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-2 text-[11px] text-zinc-500">
+              <span className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-white/[0.03] px-2.5 py-1">
+                <Paperclip size={12} /> Attach
+              </span>
+              <span className="hidden sm:inline">Shift+Enter for a new line</span>
+            </span>
+            {isGenerating ? (
+              <button onClick={onStop} className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-700 text-white hover:bg-zinc-600">
+                <Square size={12} fill="currentColor" />
+              </button>
+            ) : (
+              <button disabled={!canSend} onClick={() => onSend(draft)} className={`flex h-8 w-8 items-center justify-center rounded-full ${canSend ? "bg-white text-black hover:bg-zinc-200" : "bg-white/10 text-zinc-500"}`}>
+                <ArrowUp size={14} />
+              </button>
+            )}
+          </div>
         </div>
-        <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-500">
-          <span className="flex items-center gap-2">
-            <span className="hidden sm:inline">↵ send · ⇧↵ newline · drag files for context</span>
-            {attachedIds.length > 0 && <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-amber-400">{attachedIds.length} attached</span>}
-          </span>
-          <span className="flex items-center gap-2">
-            <span className="hidden sm:inline">{model === "openrouter/free" ? "Free Router" : model}</span>
-            <span>{draft.length > 0 ? `${Math.ceil(draft.length / 4)} tokens` : ""}</span>
-          </span>
-        </div>
+        {!large && (
+          <div className="mt-2 flex items-center justify-between text-[11px] text-zinc-500">
+            <span className="hidden sm:inline">↵ send · ⇧↵ newline</span>
+            <span>{model === "openrouter/free" ? "Free Router" : model}</span>
+          </div>
+        )}
       </div>
     </div>
   );

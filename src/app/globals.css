@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222 47% 11%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --primary: 243 75% 59%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 228 14% 96%;
+  --secondary-foreground: 222 47% 11%;
+  --muted: 228 14% 96%;
+  --muted-foreground: 220 9% 44%;
+  --accent: 243 100% 96%;
+  --accent-foreground: 243 75% 40%;
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 14% 90%;
+  --input: 220 14% 88%;
+  --ring: 243 75% 59%;
+}
+
+.dark {
+  --background: 222 47% 7%;
+  --foreground: 210 20% 96%;
+  --card: 222 44% 10%;
+  --card-foreground: 210 20% 96%;
+  --primary: 243 80% 68%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 30% 15%;
+  --secondary-foreground: 210 20% 96%;
+  --muted: 220 30% 15%;
+  --muted-foreground: 220 9% 62%;
+  --accent: 243 40% 20%;
+  --accent-foreground: 243 90% 82%;
+  --destructive: 0 63% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 220 25% 18%;
+  --input: 220 25% 20%;
+  --ring: 243 80% 68%;
+}
+
+* {
+  border-color: hsl(var(--border));
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+::selection {
+  background: hsl(var(--primary) / 0.2);
+}
+
+/* Focus ring */
+.focus-ring {
+  @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[hsl(var(--ring))] focus-visible:ring-offset-background;
+}
+
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--border));
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Markdown */
+.prose-chat {
+  @apply text-[15px] leading-7;
+  word-break: break-word;
+}
+.prose-chat > *:first-child {
+  margin-top: 0;
+}
+.prose-chat > *:last-child {
+  margin-bottom: 0;
+}
+.prose-chat h1,
+.prose-chat h2,
+.prose-chat h3,
+.prose-chat h4 {
+  @apply mt-5 mb-2 font-semibold;
+}
+.prose-chat h1 {
+  @apply text-xl;
+}
+.prose-chat h2 {
+  @apply text-lg;
+}
+.prose-chat h3 {
+  @apply text-base;
+}
+.prose-chat p,
+.prose-chat ul,
+.prose-chat ol,
+.prose-chat blockquote {
+  @apply my-3;
+}
+.prose-chat ul {
+  @apply list-disc pl-6;
+}
+.prose-chat ol {
+  @apply list-decimal pl-6;
+}
+.prose-chat li {
+  @apply my-1;
+}
+.prose-chat strong {
+  @apply font-semibold;
+}
+.prose-chat a {
+  @apply text-[hsl(var(--primary))] underline underline-offset-2 hover:opacity-80;
+}
+.prose-chat blockquote {
+  @apply border-l-4 border-[hsl(var(--border))] pl-4 text-[hsl(var(--muted-foreground))] italic;
+}
+.prose-chat code:not(pre code) {
+  @apply rounded bg-[hsl(var(--muted))] px-1.5 py-0.5 text-[0.85em] font-mono;
+}
+.prose-chat pre {
+  @apply my-3 overflow-hidden rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--muted))];
+}
+.prose-chat pre code {
+  @apply block overflow-x-auto p-4 text-[13px] leading-6 font-mono;
+}
+.prose-chat table {
+  @apply my-3 w-full border-collapse overflow-hidden rounded-lg border border-[hsl(var(--border))] text-sm;
+}
+.prose-chat th {
+  @apply border-b border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-3 py-2 text-left font-semibold;
+}
+.prose-chat td {
+  @apply border-b border-[hsl(var(--border))] px-3 py-2 align-top;
+}
+.prose-chat hr {
+  @apply my-4 border-[hsl(var(--border))];
+}
+.prose-chat img {
+  @apply my-3 max-w-full rounded-lg;
+}

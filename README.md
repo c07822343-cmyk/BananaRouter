@@ -1,6 +1,6 @@
 # OpenRouter Chat
 
-A complete, production-feeling AI chat dashboard. The web UI and backend run
+A polished, production-quality AI chat dashboard. The web UI and backend run
 locally, but **no AI models run locally — all inference is performed by the
 OpenRouter API**.
 
@@ -22,29 +22,33 @@ Browser
 
 ## Features
 
-- Modern chat dashboard with left sidebar, header, and mobile layout
-- Streaming responses (SSE) so text appears progressively
-- Markdown rendering with tables, blockquotes, lists, links, inline code
-- Code blocks with syntax highlighting, language label, and copy button
-- Per-message copy + regenerate, stop generation, auto-scroll
-- Conversation history in browser localStorage with search, rename, delete
-- Automatic local conversation titles (no extra AI call)
-- Model selector: **Free Router** (`openrouter/free`) and
-  **Automatic/Recommended** (`openrouter/auto`), plus custom IDs
-- Settings panel: API key, model, temperature, max tokens, system prompt,
-  streaming toggle, light/dark/system theme
-- Privacy controls: clear conversation history, clear all local data
-- OpenRouter API key is **never** sent to the client and is **never** stored
-  in localStorage
-- Secure server-side environment configuration with `.env.example`
-- Structured error handling for missing keys, invalid models, rate limits,
-  insufficient credits, timeouts, network errors, and malformed responses
+- Modern chat dashboard with sidebar, header, settings, and mobile layout
+- Streaming (SSE) responses with progressive rendering
+- Message actions: copy, regenerate, thumbs up/down, retry, and edit user message
+- Edit a user message → truncates the conversation after it and resends
+- Stop generation with real request cancellation; partial output is preserved and marked interrupted
+- Smart auto-scroll: if you scroll up while generating, a **Jump to latest** button appears instead of forcing the view back
+- Markdown rendering (headings, lists, tables, blockquotes, links, code) with syntax highlighting
+- Professional code blocks with language label, horizontal scroll, and Copy → “Copied!”
+- Conversation sidebar grouped by Today / Yesterday / Previous 7 Days / Older
+- Search conversation titles **and** message content with snippets and empty-state
+- Rename, delete (with confirmation), and context menu
+- Conversation titles generated locally (no extra AI call)
+- Model selector: Free Router, Automatic/Recommended, live OpenRouter catalog with free/paid badges, context windows, and refresh
+- Optional **Enhance Prompt** workflow: sends the prompt for an additional AI request and lets you accept or reject the result
+- Settings redesigned into General / Appearance / AI / OpenRouter / Chat / Privacy / Advanced
+- OpenRouter usage information (from `/api/v1/auth/key`) and model catalog refresh
+- Export current conversation or all conversations as JSON; import with validation
+- Configurable app name/description from a single central configuration
+- Developer debug mode showing non-sensitive request info
+- Centralized error system with category, details, and retry when appropriate
+- Structured errors for missing key, invalid model, rate limits, insufficient credits, context limits, timeouts, network errors, and malformed responses
+- Browser storage abstraction: localStorage for small histories, IndexedDB for larger histories, never stores API keys
 
 ## Tech stack
 
 - Next.js 15 (App Router) — frontend + API routes
-- React 19, TypeScript
-- Tailwind CSS
+- React 19, TypeScript, Tailwind CSS
 - React Markdown + remark-gfm + rehype-highlight
 - OpenRouter Chat Completions API (no local model runtime)
 
@@ -72,7 +76,7 @@ npm run start
 
 ## Where to put the OpenRouter API key
 
-The application reads the key from the **server only**. There are two ways:
+The key is read **only** on the server. There are two ways:
 
 ### 1. Environment variable (recommended)
 
@@ -87,69 +91,48 @@ OPENROUTER_MODEL=openrouter/free
 
 ### 2. Settings UI (development convenience)
 
-Open Settings → API and paste the key, then click **Save**. The key is POSTed
-to `/api/settings`, stored server-side in `.env.local`, and used only by the
-backend. It is never written to the browser.
+Open **Settings → OpenRouter** and paste the key, then click **Save**. The key
+is POSTed to `/api/settings`, stored server-side in `.env.local`, and used only
+by the backend. It is never written to the browser.
 
-> **Production note:** Use server-side environment variables or a secure
-> secret store. The Settings UI key field is intended for local development.
+> **Production note:** use server-side environment variables or a secure
+> secret store. If you believe a key was exposed at any point, rotate it
+> immediately at https://openrouter.ai/keys before using the app.
 
-## Required environment variables
+## Environment variables
 
-| Variable | Required | Example | Description |
+| Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `OPENROUTER_API_KEY` | Yes | `sk-or-v1-…` | Your OpenRouter key. Server only. |
+| `OPENROUTER_API_KEY` | Yes | — | OpenRouter key. Server only. |
 | `OPENROUTER_MODEL` | No | `openrouter/free` | Default model router. |
-| `APP_NAME` | No | `OpenRouter Chat` | Sent to OpenRouter as `X-Title`. |
+| `APP_NAME` | No | `OpenRouter Chat` | App name (branding + `X-Title`). |
+| `APP_DESCRIPTION` | No | `A modern AI chat dashboard powered by OpenRouter.` | App description. |
 | `APP_URL` | No | `http://localhost:3000` | Sent to OpenRouter as `HTTP-Referer`. |
 | `OPENROUTER_TEMPERATURE` | No | `0.7` | Default temperature. |
+| `OPENROUTER_TIMEOUT_MS` | No | `120000` | Server-side default request timeout. |
+| `OSS_APP_VERSION` | No | `1.0.0` | Displayed in Settings → Advanced. |
 
 ## Default model configuration
 
-The default model is set centrally in:
-
-`src/lib/server/config.ts` (`DEFAULT_MODEL = "openrouter/free"`)
-
-and can also be overridden per deployment with `OPENROUTER_MODEL`. The UI
-starts with `openrouter/free`, which uses OpenRouter’s free-model routing and
-automatically selects an available free model. Because free-model availability
-changes over time, the identifier is configurable — it is never hard-coded
-throughout the app.
+The default model is set centrally in `src/lib/server/config.ts`
+(`DEFAULT_MODEL = "openrouter/free"`) and can be overridden per deployment with
+`OPENROUTER_MODEL`. The UI also lets you pick models live from the OpenRouter
+catalog, so you are never locked into a hard-coded free model.
 
 ## Backend API
 
-### `POST /api/chat`
+- `POST /api/chat` — validates messages/model, proxies to OpenRouter, streams
+  SSE back (or JSON when streaming is off), with request-size limits and basic
+  per-process rate limiting.
+- `GET/POST /api/settings` — server configuration/status.
+- `POST /api/test` — connection test.
+- `GET /api/models` — live OpenRouter model catalog (free/paid, context).
+- `GET /api/usage` — OpenRouter key usage (limits/usage/free-tier), falls back
+  to “Usage information unavailable.”
 
-Request:
-
-```json
-{
-  "messages": [{ "role": "user", "content": "Hello" }],
-  "model": "openrouter/free",
-  "temperature": 0.7,
-  "maxTokens": 4096,
-  "systemPrompt": "You are a helpful assistant.",
-  "streaming": true
-}
-```
-
-- Validates messages, roles, and model.
-- Reads `OPENROUTER_API_KEY` on the server.
-- Sends the request to
-  `https://openrouter.ai/api/v1/chat/completions` with
-  `Authorization`, `Content-Type`, `HTTP-Referer`, and `X-Title` headers.
-- Streams SSE back when `streaming` is true.
-- Returns structured errors (`code`, `message`, `detail`) for common failures.
-
-### `POST /api/settings`
-
-Accepts `{ "apiKey?: string, "model?: string" }` to update server-side
-configuration (development only).
-
-### `POST /api/test`
-
-Accepts `{ "model": "openrouter/free" }` and sends a tiny ping request to
-OpenRouter to verify credentials and the selected model.
+OpenRouter requests include `Authorization`, `Content-Type`, `HTTP-Referer`,
+and `X-Title`. Error messages and details are redacted so keys/headers are never
+exposed.
 
 ## Project structure
 
@@ -162,53 +145,47 @@ OpenRouter to verify credentials and the selected model.
 └── src
     ├── app
     │   ├── layout.tsx
-    │   ├── page.tsx                 # chat dashboard shell/state
+    │   ├── page.tsx                 # chat dashboard state/actions
     │   ├── globals.css
     │   └── api
-    │       ├── chat/route.ts        # POST /api/chat (streaming proxy)
+    │       ├── chat/route.ts        # POST /api/chat
     │       ├── settings/route.ts    # GET/POST /api/settings
-    │       └── test/route.ts        # POST /api/test
+    │       ├── test/route.ts        # POST /api/test
+    │       ├── models/route.ts      # GET /api/models
+    │       └── usage/route.ts       # GET /api/usage
     ├── components
+    │   ├── chat      # ChatPanel, MessageBubble, Composer, Markdown, code, errors, enhance
     │   ├── layout    # AppShell, Sidebar, Header
-    │   ├── chat      # ChatPanel, MessageBubble, MessageComposer, Markdown, code, errors, empty state
     │   ├── settings  # SettingsModal, ModelSelector
-    │   └── ui
-    ├── lib
-    │   ├── client    # browser API client, storage, settings, utils
-    │   ├── server    # OpenRouter client + server config (secret-aware)
-    │   └── shared    # shared types
-    └── public
+    │   └── ui        # ConfirmDialog
+    └── lib
+        ├── client    # API client, storage (localStorage + IndexedDB), settings, utils
+        ├── server    # OpenRouter client, meta/usage, server config
+        └── shared    # types
 ```
 
 ## Security
 
-- The OpenRouter API key is only read and used by server code.
-- `.env.local` is git-ignored; `.env.example` contains no real key.
-- The browser app calls `/api/chat`; it never calls OpenRouter directly.
-- Markdown is rendered with React Markdown; links are opened with
-  `rel="noopener noreferrer nofollow"` to reduce XSS risk.
-- Error payloads from OpenRouter are returned to the browser only so the UI can
-  show useful details; no API key is included in errors.
+- API key read/used only by server code; never in client bundles, localStorage,
+  URLs, debug output, or logs.
+- `.env.local` is git-ignored; `.env.example` has no real key.
+- Redaction protects against keys/headers appearing in error messages.
+- Markdown is rendered with React Markdown (no raw HTML); links use
+  `rel="noopener noreferrer nofollow"`.
+- Imported conversations are validated and never executed.
+- Request size, message count/content length, model format, and basic rate
+  limits are enforced server-side.
 
 ## No local models
 
-The application never downloads, installs, hosts, or launches local model
-runtimes. There is no Ollama, LM Studio, llama.cpp, or LocalAI code and no local
-inference path. Every completion is sent to the OpenRouter API.
+The app never downloads, installs, hosts, or launches local model runtimes.
+There is no Ollama, LM Studio, llama.cpp, or LocalAI code or path. Every
+completion goes to the OpenRouter API.
 
 ## Testing checklist
 
-Run `npm run build` and confirm:
-
-- The app starts (npm run dev → http://localhost:3000).
-- Chat interface loads with empty-state example prompts.
-- Missing API key produces the structured `missing_api_key` error.
-- With a valid key, chat works and responses stream.
-- New chat, rename, delete, and search work.
-- Settings (key/model/temp/max tokens/system prompt/streaming/theme) work.
-- Light/Dark/System theme toggles.
-- Mobile layout is usable.
-- API errors display friendly messages with expandable Details.
-- No API key is present in client-side source or built client bundles (only the
-  `sk-or-v1-…` placeholder in the settings input).
-- No local AI model is downloaded or launched.
+Run `npm run build` and confirm the app starts, chat UI loads, the missing-key
+error works, model/usage/test endpoints behave, settings persist, theme toggles,
+the mobile layout is usable, message search/grouping works, edit/regenerate/stop
+work, export/import works, and no API key is present in client source. Note that
+a live OpenRouter round-trip requires a real `OPENROUTER_API_KEY`.

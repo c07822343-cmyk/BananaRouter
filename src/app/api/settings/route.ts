@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
-  getApiKeySource,
-  getAppName,
-  getDefaultModel,
-  isApiKeyConfigured,
+  getServerStatus,
   saveServerConfig,
 } from "@/lib/server/config";
-import { makeApiError } from "@/lib/server/openrouter";
+import { makeApiError, validateModel } from "@/lib/server/openrouter";
 import { SettingsInput, SettingsStatus } from "@/lib/shared/types";
 
 export async function GET() {
-  const status: SettingsStatus = {
-    apiKeyConfigured: isApiKeyConfigured(),
-    apiKeySource: getApiKeySource(),
-    model: getDefaultModel(),
-    appName: getAppName(),
-  };
+  const status: SettingsStatus = getServerStatus();
   return NextResponse.json(status);
 }
 
@@ -52,6 +44,18 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (model) {
+    try {
+      validateModel(model);
+    } catch (error) {
+      const err = error as { message: string };
+      return NextResponse.json(
+        makeApiError("invalid_model", err.message || "Invalid model identifier"),
+        { status: 400 }
+      );
+    }
+  }
+
   try {
     await saveServerConfig({ apiKey: apiKey || undefined, model: model || undefined });
   } catch {
@@ -65,12 +69,5 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const status: SettingsStatus = {
-    apiKeyConfigured: isApiKeyConfigured(),
-    apiKeySource: getApiKeySource(),
-    model: getDefaultModel(),
-    appName: getAppName(),
-  };
-
-  return NextResponse.json(status);
+  return NextResponse.json(getServerStatus());
 }

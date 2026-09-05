@@ -34,7 +34,7 @@ export function MarkdownMessage({ content }: MarkdownMessageProps) {
     <div className="prose-chat">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
-        rehypePlugins={[rehypeHighlight]}
+        rehypePlugins={[[rehypeHighlight, { detect: true, ignoreMissing: true }]]}
         components={{
           a: ({ node, children, ...props }) => (
             <a {...props} target="_blank" rel="noopener noreferrer nofollow">

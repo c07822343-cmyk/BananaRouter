@@ -1,59 +1,101 @@
 "use client";
 
-import { useState, useCallback, useEffect, useRef } from "react";
-import { AppShell } from "@/components/layout/AppShell";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { AppShell, AppInfo } from "@/components/layout/AppShell";
 import { ChatPanel } from "@/components/chat/ChatPanel";
-import { Conversation, ChatMessage, ApiError } from "@/lib/shared/types";
+import { EnhancePromptDialog } from "@/components/chat/EnhancePromptDialog";
+import { ApiError, AppDebugInfo, ChatMessage, Conversation } from "@/lib/shared/types";
 import {
-  loadConversations,
-  saveConversations,
-  deleteConversation,
-  createConversation,
-  updateConversation,
-  getActiveConversationId,
-  setActiveConversationId,
   clearConversations,
+  conversationsToJson,
+  conversationToJson,
+  createConversation,
+  deleteConversation,
+  downloadText,
+  getActiveConversationId,
+  loadConversations,
+  parseConversationsImport,
+  saveConversations,
+  setActiveConversationId,
+  uid,
+  updateConversation,
 } from "@/lib/client/storage";
 import {
+  DEFAULT_SETTINGS,
+  AppSettings,
+  ThemeMode,
   loadSettings,
   saveSettings,
   loadTheme,
   applyTheme,
-  DEFAULT_SETTINGS,
-  AppSettings,
 } from "@/lib/client/settings";
-import { streamChat, saveSettingsToServer } from "@/lib/client/api";
-import { generateTitle } from "@/lib/client/utils";
+import {
+  enhancePrompt,
+  getSettingsStatus,
+  saveSettingsToServer,
+  streamChat,
+} from "@/lib/client/api";
+import { generateTitle, sanitizeFileName } from "@/lib/client/utils";
+
+const DEFAULT_APP_INFO: AppInfo = {
+  appName: "OpenRouter Chat",
+  appDescription: "A modern AI chat dashboard powered by OpenRouter.",
+  appVersion: "1.0.0",
+};
 
 export default function Home() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
-  const [theme, setTheme] = useState<"light" | "dark" | "system">("system");
+  const [theme, setTheme] = useState<ThemeMode>("system");
+  const [appInfo, setAppInfo] = useState<AppInfo>(DEFAULT_APP_INFO);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [streamingMessage, setStreamingMessage] = useState<string>("");
-  const [activeModel, setActiveModel] = useState<string | null>(null);
+  const [streamingMessage, setStreamingMessage] = useState("");
   const [error, setError] = useState<ApiError | null>(null);
+  const [draft, setDraft] = useState("");
+  const [enhancing, setEnhancing] = useState(false);
+  const [enhancement, setEnhancement] = useState<{ original: string; enhanced: string } | null>(null);
+  const [enhanceError, setEnhanceError] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<AppDebugInfo | null>(null);
+
   const abortRef = useRef<AbortController | null>(null);
   const streamedContentRef = useRef("");
   const streamingConversationIdRef = useRef<string | null>(null);
+  const generationTokenRef = useRef(0);
+  const hydratedRef = useRef(false);
 
   useEffect(() => {
-    const stored = loadConversations();
-    const loadedSettings = loadSettings();
-    const loadedTheme = loadTheme();
-    setConversations(stored);
-    setSettings(loadedSettings);
-    setTheme(loadedTheme);
-    const active = getActiveConversationId(stored);
-    setActiveId(active);
-    applyTheme(loadedTheme);
+    let mounted = true;
+    (async () => {
+      const [stored, loadedSettings, loadedTheme] = await Promise.all([
+        loadConversations(),
+        Promise.resolve(loadSettings()),
+        Promise.resolve(loadTheme()),
+      ]);
+      const status = await getSettingsStatus().catch(() => null);
+      if (!mounted) return;
+      hydratedRef.current = true;
+      setConversations(stored);
+      setSettings(loadedSettings);
+      setTheme(loadedTheme);
+      setAppInfo({
+        appName: status?.appName ?? DEFAULT_APP_INFO.appName,
+        appDescription: status?.appDescription ?? DEFAULT_APP_INFO.appDescription,
+        appVersion: status?.appVersion ?? DEFAULT_APP_INFO.appVersion,
+      });
+      setActiveId(getActiveConversationId(stored));
+      applyTheme(loadedTheme);
+    })();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   useEffect(() => {
-    saveConversations(conversations);
+    if (!hydratedRef.current) return;
+    void saveConversations(conversations);
   }, [conversations]);
 
   useEffect(() => {
@@ -66,37 +108,150 @@ export default function Home() {
 
   const activeConversation = conversations.find((c) => c.id === activeId) ?? null;
 
+  const commitAssistant = useCallback(
+    (convoId: string, content: string, interrupted: boolean) => {
+      const assistant: ChatMessage = {
+        id: uid(),
+        role: "assistant",
+        content,
+        interrupted,
+      };
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === convoId
+            ? { ...c, messages: [...c.messages, assistant], updatedAt: Date.now() }
+            : c
+        )
+      );
+    },
+    []
+  );
+
+  const startGeneration = useCallback(
+    (convoId: string, sendMessages: ChatMessage[], modelInput: string) => {
+      const token = ++generationTokenRef.current;
+      const controller = new AbortController();
+      abortRef.current?.abort();
+      abortRef.current = controller;
+      streamingConversationIdRef.current = convoId;
+      setIsGenerating(true);
+      setError(null);
+      setStreamingMessage("");
+      streamedContentRef.current = "";
+
+      const startedAt = Date.now();
+      let accumulated = "";
+      let usage: unknown;
+      let lastStatus: number | undefined;
+
+      void streamChat(
+        sendMessages,
+        {
+          model: modelInput,
+          temperature: settings.temperature,
+          maxTokens: settings.maxTokens,
+          systemPrompt: settings.systemPrompt,
+          streaming: settings.streaming,
+          requestTimeout: settings.requestTimeout,
+          debug: settings.debugLogging,
+        },
+        {
+          onDelta: (delta) => {
+            accumulated += delta;
+            streamedContentRef.current = accumulated;
+            setStreamingMessage(accumulated);
+          },
+          onUsage: (u) => {
+            usage = u;
+          },
+          onDone: () => {
+            if (token !== generationTokenRef.current) return;
+            commitAssistant(convoId, accumulated || "…", false);
+            setStreamingMessage("");
+            setIsGenerating(false);
+            streamedContentRef.current = "";
+            streamingConversationIdRef.current = null;
+            setDebugInfo({
+              enabled: settings.debugLogging,
+              model: modelInput,
+              durationMs: Date.now() - startedAt,
+              status: 200,
+              streaming: settings.streaming,
+              tokenUsage: usage ? JSON.stringify(usage) : undefined,
+            });
+          },
+          onError: (err) => {
+            if (token !== generationTokenRef.current) return;
+            if (err.code === "aborted") return;
+            setError(err);
+            setStreamingMessage("");
+            setIsGenerating(false);
+            if (accumulated) {
+              commitAssistant(convoId, accumulated, true);
+            }
+            streamedContentRef.current = "";
+            streamingConversationIdRef.current = null;
+            setDebugInfo({
+              enabled: settings.debugLogging,
+              model: modelInput,
+              durationMs: Date.now() - startedAt,
+              status: err.status ?? lastStatus,
+              streaming: settings.streaming,
+              errorCode: err.code,
+              errorCategory: err.category,
+              partial: Boolean(accumulated),
+            });
+          },
+          signal: controller.signal,
+        }
+      );
+    },
+    [commitAssistant, settings]
+  );
+
   const handleNewChat = useCallback(() => {
+    generationTokenRef.current += 1;
     abortRef.current?.abort();
+    abortRef.current = null;
     setIsGenerating(false);
     setStreamingMessage("");
+    setError(null);
+    setDraft("");
+    setEnhancement(null);
+    setEnhanceError(null);
+    setDebugInfo(null);
     const convo = createConversation();
     setConversations((prev) => [convo, ...prev]);
     setActiveId(convo.id);
-    setActiveModel(DEFAULT_SETTINGS.model);
     setSidebarOpen(false);
-    setError(null);
     streamedContentRef.current = "";
     streamingConversationIdRef.current = null;
-    requestAnimationFrame(() => {
-      document.getElementById("chat-input")?.focus();
-    });
+    requestAnimationFrame(() => document.getElementById("chat-input")?.focus());
   }, []);
 
   const handleSelectConversation = useCallback(
     (id: string) => {
-      if (isGenerating) {
-        abortRef.current?.abort();
-        setIsGenerating(false);
-        setStreamingMessage("");
-        streamedContentRef.current = "";
-        streamingConversationIdRef.current = null;
+      generationTokenRef.current += 1;
+      abortRef.current?.abort();
+      abortRef.current = null;
+      setIsGenerating(false);
+      setStreamingMessage("");
+      setError(null);
+      setDraft("");
+      setEnhancement(null);
+      streamedContentRef.current = "";
+      streamingConversationIdRef.current = null;
+      const convo = conversations.find((c) => c.id === id);
+      if (convo?.model && convo.model !== settings.model) {
+        const next = { ...settings, model: convo.model };
+        setSettings(next);
+        saveSettings(next);
       }
       setActiveId(id);
-      setActiveModel(conversations.find((c) => c.id === id)?.model ?? settings.model ?? null);
       setSidebarOpen(false);
+      setDebugInfo(null);
     },
-    [conversations, isGenerating, settings.model]
+    [conversations, settings]
   );
 
   const handleDeleteConversation = useCallback(
@@ -106,14 +261,18 @@ export default function Home() {
       if (activeId === id) {
         const fallback = next[0] ?? null;
         setActiveId(fallback?.id ?? null);
-        setActiveModel(fallback?.model ?? settings.model ?? null);
         setStreamingMessage("");
         setIsGenerating(false);
         streamedContentRef.current = "";
         streamingConversationIdRef.current = null;
+        if (fallback?.model) {
+          const nextSettings = { ...settings, model: fallback.model };
+          setSettings(nextSettings);
+          saveSettings(nextSettings);
+        }
       }
     },
-    [conversations, activeId, settings.model]
+    [conversations, activeId, settings]
   );
 
   const handleRenameConversation = useCallback((id: string, title: string) => {
@@ -123,231 +282,128 @@ export default function Home() {
   }, []);
 
   const handleSend = useCallback(
-    async (text: string) => {
+    (text: string) => {
       const content = text.trim();
       if (!content || isGenerating) return;
-
-      let convoId = activeId;
-      let convo = conversations.find((c) => c.id === convoId);
-
+      setDraft("");
+      let convo = activeConversation;
       if (!convo) {
         convo = createConversation();
-        convoId = convo.id;
-        setConversations((prev) => [convo!, ...prev]);
-        setActiveId(convoId);
+        setActiveId(convo.id);
       }
-
-      const userMessage: ChatMessage = { role: "user", content };
-
-      let title = convo.title;
-      if (convo.messages.length === 0) {
-        title = generateTitle(content);
-      }
-
+      const userMessage: ChatMessage = { id: uid(), role: "user", content };
+      const messages = [...convo.messages, userMessage];
       const updated: Conversation = {
         ...convo,
-        title,
+        title: convo.messages.length === 0 ? generateTitle(content) : convo.title,
         model: settings.model,
         updatedAt: Date.now(),
-        messages: [...convo.messages, userMessage],
+        messages,
       };
-
       setConversations((prev) =>
-        prev.map((c) => (c.id === convoId ? updated : c))
+        prev.some((c) => c.id === updated.id)
+          ? prev.map((c) => (c.id === updated.id ? updated : c))
+          : [updated, ...prev]
       );
-
-      const modelInput = settings.model;
-      setActiveModel(modelInput);
-      setIsGenerating(true);
-      setError(null);
-      setStreamingMessage("");
-
-      const controller = new AbortController();
-      abortRef.current = controller;
-      streamingConversationIdRef.current = convoId;
-
-      let accumulated = "";
-      streamedContentRef.current = "";
-      try {
-        await streamChat(
-          updated.messages,
-          {
-            model: modelInput,
-            temperature: settings.temperature,
-            maxTokens: settings.maxTokens,
-            systemPrompt: settings.systemPrompt,
-            streaming: settings.streaming,
-          },
-          {
-            onDelta: (delta) => {
-              accumulated += delta;
-              streamedContentRef.current = accumulated;
-              setStreamingMessage(accumulated);
-            },
-            onDone: () => {
-              const finalMessage: ChatMessage = {
-                role: "assistant",
-                content: accumulated || "…",
-              };
-              setConversations((prev) =>
-                prev.map((c) =>
-                  c.id === convoId
-                    ? {
-                        ...c,
-                        messages: [...c.messages, finalMessage],
-                        updatedAt: Date.now(),
-                      }
-                    : c
-                )
-              );
-              setStreamingMessage("");
-              setIsGenerating(false);
-              streamedContentRef.current = "";
-              streamingConversationIdRef.current = null;
-            },
-            onError: (err) => {
-              setError(err);
-              setIsGenerating(false);
-              setStreamingMessage("");
-              if (accumulated) {
-                setConversations((prev) =>
-                  prev.map((c) =>
-                    c.id === convoId
-                      ? {
-                          ...c,
-                          messages: [
-                            ...c.messages,
-                            { role: "assistant", content: accumulated },
-                          ],
-                          updatedAt: Date.now(),
-                        }
-                      : c
-                  )
-                );
-              }
-              streamedContentRef.current = "";
-              streamingConversationIdRef.current = null;
-            },
-            signal: controller.signal,
-          }
-        );
-      } catch (err) {
-        const apiError: ApiError =
-          err && typeof err === "object" && "code" in (err as object)
-            ? (err as ApiError)
-            : {
-                code: "unknown",
-                message:
-                  err instanceof Error
-                    ? err.message
-                    : "An unexpected error occurred.",
-                detail: err instanceof Error ? err.message : String(err),
-              };
-        setError(apiError);
-        setIsGenerating(false);
-        setStreamingMessage("");
-      }
+      startGeneration(updated.id, messages, settings.model);
     },
-    [activeId, conversations, isGenerating, settings]
+    [activeConversation, isGenerating, settings.model, startGeneration]
   );
 
   const handleStop = useCallback(() => {
+    generationTokenRef.current += 1;
     abortRef.current?.abort();
     const partial = streamedContentRef.current;
     const convoId = streamingConversationIdRef.current;
     if (partial && convoId) {
+      commitAssistant(convoId, partial, true);
       setConversations((prev) =>
         prev.map((c) =>
-          c.id === convoId
-            ? {
-                ...c,
-                messages: [
-                  ...c.messages,
-                  { role: "assistant", content: partial },
-                ],
-                updatedAt: Date.now(),
-              }
-            : c
+          c.id === convoId ? { ...c, updatedAt: Date.now() } : c
         )
       );
     }
     setIsGenerating(false);
     setStreamingMessage("");
+    setDraft("");
     streamedContentRef.current = "";
     streamingConversationIdRef.current = null;
-  }, []);
+  }, [commitAssistant]);
 
   const handleRegenerate = useCallback(() => {
-    if (!activeConversation || activeConversation.messages.length === 0) return;
-    const msgs = [...activeConversation.messages];
+    const convo = activeConversation;
+    if (!convo || convo.messages.length === 0 || isGenerating) return;
+    const msgs = [...convo.messages];
     while (msgs.length && msgs[msgs.length - 1].role === "assistant") {
       msgs.pop();
     }
     if (msgs.length === 0) return;
-    const updated = {
-      ...activeConversation,
-      messages: msgs,
-      updatedAt: Date.now(),
-    };
+    const updated = { ...convo, messages: msgs, updatedAt: Date.now() };
+    setConversations((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    startGeneration(updated.id, msgs, settings.model);
+  }, [activeConversation, isGenerating, settings.model, startGeneration]);
+
+  const handleRetry = useCallback(() => {
+    const convo = activeConversation;
+    if (!convo || convo.messages.length === 0 || isGenerating) return;
+    const msgs = [...convo.messages];
+    while (msgs.length && msgs[msgs.length - 1].role === "assistant") {
+      msgs.pop();
+    }
+    if (msgs.length === 0) return;
+    const updated = { ...convo, messages: msgs, updatedAt: Date.now() };
+    setConversations((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+    startGeneration(updated.id, msgs, settings.model);
+  }, [activeConversation, isGenerating, settings.model, startGeneration]);
+
+  const handleEditMessage = useCallback(
+    (messageId: string, newText: string) => {
+      const convo = activeConversation;
+      if (!convo) return;
+      const idx = convo.messages.findIndex(
+        (m) => m.id === messageId && m.role === "user"
+      );
+      if (idx === -1) return;
+      const edited: ChatMessage = { id: messageId, role: "user", content: newText };
+      const messages = [...convo.messages.slice(0, idx), edited];
+      const updated: Conversation = { ...convo, messages, updatedAt: Date.now() };
+      setConversations((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+      startGeneration(updated.id, messages, settings.model);
+    },
+    [activeConversation, settings.model, startGeneration]
+  );
+
+  const handleFeedback = useCallback((messageId: string, feedback: "up" | "down") => {
     setConversations((prev) =>
-      prev.map((c) => (c.id === updated.id ? updated : c))
+      prev.map((c) => ({
+        ...c,
+        messages: c.messages.map((m) => {
+          if (m.id !== messageId) return m;
+          return { ...m, feedback: m.feedback === feedback ? null : feedback };
+        }),
+        updatedAt: c.updatedAt,
+      }))
     );
+  }, []);
 
-    setIsGenerating(true);
-    setError(null);
-    setStreamingMessage("");
-    const controller = new AbortController();
-    abortRef.current = controller;
-    streamingConversationIdRef.current = updated.id;
-
-    let accumulated = "";
-    streamedContentRef.current = "";
-    streamChat(
-      msgs,
-      {
-        model: settings.model,
-        temperature: settings.temperature,
-        maxTokens: settings.maxTokens,
-        systemPrompt: settings.systemPrompt,
-        streaming: settings.streaming,
-      },
-      {
-        onDelta: (delta) => {
-          accumulated += delta;
-          streamedContentRef.current = accumulated;
-          setStreamingMessage(accumulated);
-        },
-        onDone: () => {
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === updated.id
-                ? {
-                    ...c,
-                    messages: [
-                      ...c.messages,
-                      { role: "assistant", content: accumulated || "…" },
-                    ],
-                    updatedAt: Date.now(),
-                  }
-                : c
-            )
-          );
-          setStreamingMessage("");
-          setIsGenerating(false);
-          streamedContentRef.current = "";
-          streamingConversationIdRef.current = null;
-        },
-        onError: (err) => {
-          setError(err);
-          setIsGenerating(false);
-          setStreamingMessage("");
-          streamedContentRef.current = "";
-          streamingConversationIdRef.current = null;
-        },
-        signal: controller.signal,
+  const handleEnhance = useCallback(
+    async (text: string) => {
+      if (!text.trim() || isGenerating || enhancing) return;
+      setEnhancing(true);
+      setEnhanceError(null);
+      try {
+        const enhanced = await enhancePrompt(text.trim(), settings.model);
+        setEnhancement({ original: text.trim(), enhanced });
+      } catch (err) {
+        setEnhanceError(
+          err instanceof Error ? err.message : "Could not enhance the prompt."
+        );
+      } finally {
+        setEnhancing(false);
       }
-    );
-  }, [activeConversation, settings]);
+    },
+    [isGenerating, enhancing, settings.model]
+  );
 
   const handleSaveSettings = useCallback((next: AppSettings) => {
     setSettings(next);
@@ -356,79 +412,167 @@ export default function Home() {
 
   const handleModelChange = useCallback(
     (model: string) => {
-      setActiveModel(model);
       const next = { ...settings, model };
       setSettings(next);
       saveSettings(next);
-      saveSettingsToServer({ model }).catch(() => {
-        // Best effort; the chat request also sends the model explicitly.
-      });
+      saveSettingsToServer({ model }).catch(() => undefined);
+      if (activeConversation) {
+        setConversations((prev) =>
+          prev.map((c) => (c.id === activeConversation.id ? { ...c, model } : c))
+        );
+      }
+      setDebugInfo(null);
     },
-    [settings]
+    [settings, activeConversation]
   );
 
   const handleClearHistory = useCallback(() => {
-    const next = clearConversations();
-    setConversations(next);
-    setActiveId(null);
-    setActiveModel(settings.model);
+    generationTokenRef.current += 1;
     abortRef.current?.abort();
-    setIsGenerating(false);
+    setConversations([]);
+    void clearConversations();
+    setActiveId(null);
     setStreamingMessage("");
+    setIsGenerating(false);
     setError(null);
+    setDebugInfo(null);
     streamedContentRef.current = "";
     streamingConversationIdRef.current = null;
-  }, [settings.model]);
+  }, []);
 
   const handleClearAllLocalData = useCallback(() => {
+    generationTokenRef.current += 1;
     abortRef.current?.abort();
     setIsGenerating(false);
     setStreamingMessage("");
     setError(null);
-    setConversations(clearConversations());
+    setConversations([]);
+    void clearConversations();
     setActiveId(null);
     localStorage.clear();
     setSettings(DEFAULT_SETTINGS);
     setTheme("system");
     applyTheme("system");
+    setDraft("");
+    setDebugInfo(null);
     streamedContentRef.current = "";
     streamingConversationIdRef.current = null;
   }, []);
 
+  const handleExportCurrent = useCallback(() => {
+    if (!activeConversation) return;
+    downloadText(
+      `${sanitizeFileName(activeConversation.title)}.json`,
+      conversationToJson(activeConversation)
+    );
+  }, [activeConversation]);
+
+  const handleExportAll = useCallback(() => {
+    if (conversations.length === 0) return;
+    const date = new Date().toISOString().slice(0, 10);
+    downloadText(
+      `openrouter-chat-backup-${date}.json`,
+      conversationsToJson(conversations)
+    );
+  }, [conversations]);
+
+  const handleImport = useCallback(
+    async (json: string): Promise<{ ok: boolean; error?: string }> => {
+      const result = parseConversationsImport(json);
+      if (!result.ok) return { ok: false, error: result.error };
+      setConversations((prev) => {
+        const existingIds = new Set(prev.map((c) => c.id));
+        const additions = result.conversations.filter((c) => !existingIds.has(c.id));
+        const merged = [...additions, ...prev].sort(
+          (a, b) => b.updatedAt - a.updatedAt
+        );
+        return merged;
+      });
+      if (result.conversations.length > 0) {
+        setActiveId(result.conversations[0].id);
+      }
+      return { ok: true };
+    },
+    []
+  );
+
   return (
-    <AppShell
-      conversations={conversations}
-      activeId={activeId}
-      activeModel={activeModel}
-      settings={settings}
-      theme={theme}
-      onThemeChange={setTheme}
-      settingsOpen={settingsOpen}
-      setSettingsOpen={setSettingsOpen}
-      sidebarOpen={sidebarOpen}
-      setSidebarOpen={setSidebarOpen}
-      onNewChat={handleNewChat}
-      onSelectConversation={handleSelectConversation}
-      onDeleteConversation={handleDeleteConversation}
-      onRenameConversation={handleRenameConversation}
-      onClearHistory={handleClearHistory}
-      onClearAllLocalData={handleClearAllLocalData}
-      onSaveSettings={handleSaveSettings}
-    >
-      <ChatPanel
-        conversation={activeConversation}
-        streamingMessage={streamingMessage}
-        isGenerating={isGenerating}
-        error={error}
-        currentModel={settings.model}
-        onModelChange={handleModelChange}
-        onSend={handleSend}
-        onStop={handleStop}
-        onRegenerate={handleRegenerate}
-        onDismissError={() => setError(null)}
-        disabled={false}
+    <>
+      <AppShell
+        conversations={conversations}
+        activeId={activeId}
+        activeModel={settings.model}
+        settings={settings}
+        theme={theme}
+        appInfo={appInfo}
+        onThemeChange={setTheme}
+        settingsOpen={settingsOpen}
+        setSettingsOpen={setSettingsOpen}
+        sidebarOpen={sidebarOpen}
+        setSidebarOpen={setSidebarOpen}
         onNewChat={handleNewChat}
+        onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
+        onRenameConversation={handleRenameConversation}
+        onClearHistory={handleClearHistory}
+        onClearAllLocalData={handleClearAllLocalData}
+        onSaveSettings={handleSaveSettings}
+        onExportCurrent={handleExportCurrent}
+        onExportAll={handleExportAll}
+        onImport={handleImport}
+      >
+        <ChatPanel
+          conversation={activeConversation}
+          streamingMessage={streamingMessage}
+          isGenerating={isGenerating}
+          error={error}
+          currentModel={settings.model}
+          draft={draft}
+          debugInfo={settings.debugLogging ? debugInfo : null}
+          appName={appInfo.appName}
+          onModelChange={handleModelChange}
+          onDraftChange={setDraft}
+          onSend={handleSend}
+          onStop={handleStop}
+          onRegenerate={handleRegenerate}
+          onRetry={handleRetry}
+          onEditMessage={handleEditMessage}
+          onFeedback={handleFeedback}
+          onEnhance={settings.enhancePrompt ? handleEnhance : async () => undefined}
+          enhancing={enhancing}
+          onNewChat={handleNewChat}
+          onDismissError={() => setError(null)}
+          disabled={false}
+        />
+      </AppShell>
+
+      <EnhancePromptDialog
+        open={enhancement !== null || (enhanceError !== null && !enhancement)}
+        original={enhancement?.original ?? ""}
+        enhanced={enhancement?.enhanced ?? null}
+        loading={enhancing}
+        error={enhanceError}
+        onUse={() => {
+          if (enhancement) {
+            setDraft(enhancement.enhanced);
+            setEnhancement(null);
+            setEnhanceError(null);
+            requestAnimationFrame(() => document.getElementById("chat-input")?.focus());
+          }
+        }}
+        onKeepOriginal={() => {
+          if (enhancement) {
+            setDraft(enhancement.original);
+            setEnhancement(null);
+            setEnhanceError(null);
+            requestAnimationFrame(() => document.getElementById("chat-input")?.focus());
+          }
+        }}
+        onClose={() => {
+          setEnhancement(null);
+          setEnhanceError(null);
+        }}
       />
-    </AppShell>
+    </>
   );
 }

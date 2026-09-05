@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
-import clsx from "clsx";
 import { Conversation } from "@/lib/shared/types";
 import { AppSettings, ThemeMode } from "@/lib/client/settings";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Header } from "@/components/layout/Header";
 import { SettingsModal } from "@/components/settings/SettingsModal";
+
+export interface AppInfo {
+  appName: string;
+  appDescription: string;
+  appVersion: string;
+}
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -15,6 +20,7 @@ interface AppShellProps {
   activeModel: string | null;
   settings: AppSettings;
   theme: ThemeMode;
+  appInfo: AppInfo;
   onThemeChange: (theme: ThemeMode) => void;
   settingsOpen: boolean;
   setSettingsOpen: (open: boolean) => void;
@@ -27,6 +33,9 @@ interface AppShellProps {
   onClearHistory: () => void;
   onClearAllLocalData: () => void;
   onSaveSettings: (settings: AppSettings) => void;
+  onExportCurrent: () => void;
+  onExportAll: () => void;
+  onImport: (json: string) => Promise<{ ok: boolean; error?: string }>;
 }
 
 export function AppShell({
@@ -36,6 +45,7 @@ export function AppShell({
   activeModel,
   settings,
   theme,
+  appInfo,
   onThemeChange,
   settingsOpen,
   setSettingsOpen,
@@ -48,6 +58,9 @@ export function AppShell({
   onClearHistory,
   onClearAllLocalData,
   onSaveSettings,
+  onExportCurrent,
+  onExportAll,
+  onImport,
 }: AppShellProps) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -63,6 +76,7 @@ export function AppShell({
         conversations={conversations}
         activeId={activeId}
         open={sidebarOpen}
+        appName={appInfo.appName}
         onClose={() => setSidebarOpen(false)}
         onNewChat={onNewChat}
         onSelect={onSelectConversation}
@@ -80,6 +94,7 @@ export function AppShell({
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Header
+          appName={appInfo.appName}
           activeModel={activeModel ?? settings.model}
           onMenu={() => setSidebarOpen(true)}
           onNewChat={onNewChat}
@@ -92,11 +107,15 @@ export function AppShell({
         open={settingsOpen}
         settings={settings}
         theme={theme}
+        appInfo={appInfo}
         onThemeChange={onThemeChange}
         onSave={onSaveSettings}
         onClose={() => setSettingsOpen(false)}
         onClearHistory={onClearHistory}
         onClearAllLocalData={onClearAllLocalData}
+        onExportCurrent={onExportCurrent}
+        onExportAll={onExportAll}
+        onImport={onImport}
       />
     </div>
   );

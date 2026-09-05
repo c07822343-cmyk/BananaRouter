@@ -3,18 +3,19 @@
 import { Menu, Plus, Settings, Sparkles } from "lucide-react";
 
 interface HeaderProps {
+  appName: string;
   activeModel: string;
   onMenu: () => void;
   onNewChat: () => void;
   onSettings: () => void;
 }
 
-export function Header({ activeModel, onMenu, onNewChat, onSettings }: HeaderProps) {
+export function Header({ appName, activeModel, onMenu, onNewChat, onSettings }: HeaderProps) {
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 md:px-4">
       <button
         aria-label="Open conversation menu"
-        className="focus-ring rounded-lg p-2 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] md:hidden"
+        className="focus-ring rounded-lg border border-[hsl(var(--border))] p-2 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] md:hidden"
         onClick={onMenu}
       >
         <Menu size={18} />
@@ -27,11 +28,9 @@ export function Header({ activeModel, onMenu, onNewChat, onSettings }: HeaderPro
           aria-hidden="true"
         />
         <div className="min-w-0">
-          <div className="truncate text-sm font-medium">
-            {activeModel || "Free Router"}
-          </div>
-          <div className="hidden text-[11px] text-[hsl(var(--muted-foreground))] sm:block">
-            Powered by OpenRouter
+          <div className="truncate text-sm font-semibold">{appName}</div>
+          <div className="hidden truncate text-[11px] text-[hsl(var(--muted-foreground))] sm:block">
+            {activeModel || "Free Router"} · Powered by OpenRouter
           </div>
         </div>
       </div>

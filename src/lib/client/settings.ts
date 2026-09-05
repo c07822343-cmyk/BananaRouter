@@ -6,6 +6,9 @@ export interface AppSettings {
   maxTokens: number;
   systemPrompt: string;
   streaming: boolean;
+  requestTimeout: number;
+  debugLogging: boolean;
+  enhancePrompt: boolean;
 }
 
 export const DEFAULT_SYSTEM_PROMPT =
@@ -17,6 +20,9 @@ export const DEFAULT_SETTINGS: AppSettings = {
   maxTokens: 4096,
   systemPrompt: DEFAULT_SYSTEM_PROMPT,
   streaming: true,
+  requestTimeout: 120,
+  debugLogging: false,
+  enhancePrompt: false,
 };
 
 const KEY = "openrouter-chat-settings";
@@ -31,11 +37,20 @@ export function loadSettings(): AppSettings {
     return {
       ...DEFAULT_SETTINGS,
       ...parsed,
-      model: typeof parsed.model === "string" && parsed.model.trim() ? parsed.model.trim() : DEFAULT_SETTINGS.model,
+      model:
+        typeof parsed.model === "string" && parsed.model.trim()
+          ? parsed.model.trim()
+          : DEFAULT_SETTINGS.model,
       systemPrompt:
         typeof parsed.systemPrompt === "string"
           ? parsed.systemPrompt
           : DEFAULT_SETTINGS.systemPrompt,
+      requestTimeout:
+        typeof parsed.requestTimeout === "number" &&
+        parsed.requestTimeout >= 5 &&
+        parsed.requestTimeout <= 300
+          ? parsed.requestTimeout
+          : DEFAULT_SETTINGS.requestTimeout,
     };
   } catch {
     return DEFAULT_SETTINGS;

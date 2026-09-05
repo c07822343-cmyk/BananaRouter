@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
+import { getAppName, getAppDescription } from "@/lib/server/config";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "OpenRouter Chat",
-  description:
-    "A modern AI chat dashboard powered by OpenRouter. AI inference is provided through the OpenRouter API.",
+  title: getAppName(),
+  description: getAppDescription(),
 };
 
 export default function RootLayout({

@@ -40,7 +40,7 @@ export function CodeBlock({ language, code }: CodeBlockProps) {
           className="focus-ring flex items-center gap-1 rounded px-2 py-1 text-[11px] text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]"
         >
           {copied ? <Check size={12} /> : <Copy size={12} />}
-          {copied ? "Copied" : "Copy"}
+          {copied ? "Copied!" : "Copy"}
         </button>
       </div>
       <pre className="overflow-x-auto">

@@ -3,6 +3,8 @@ import path from "path";
 
 const DEFAULT_MODEL = "openrouter/free";
 const DEFAULT_APP_NAME = "OpenRouter Chat";
+const DEFAULT_APP_DESCRIPTION =
+  "A modern AI chat dashboard powered by OpenRouter.";
 const DEFAULT_REFERER = "http://localhost:3000";
 
 interface RuntimeConfig {
@@ -42,12 +44,36 @@ export function getAppName(): string {
   return process.env.APP_NAME?.trim() || DEFAULT_APP_NAME;
 }
 
+export function getAppDescription(): string {
+  return process.env.APP_DESCRIPTION?.trim() || DEFAULT_APP_DESCRIPTION;
+}
+
+export function getAppVersion(): string {
+  return process.env.OSS_APP_VERSION?.trim() || "1.0.0";
+}
+
 export function getReferer(): string {
   return (
     process.env.HTTP_REFERER?.trim() ||
     process.env.APP_URL?.trim() ||
     DEFAULT_REFERER
   );
+}
+
+export function getDefaultRequestTimeoutMs(): number {
+  const parsed = Number(process.env.OPENROUTER_TIMEOUT_MS);
+  return Number.isFinite(parsed) && parsed >= 5000 ? parsed : 120000;
+}
+
+export function getServerStatus() {
+  return {
+    apiKeyConfigured: isApiKeyConfigured(),
+    apiKeySource: getApiKeySource(),
+    model: getDefaultModel(),
+    appName: getAppName(),
+    appDescription: getAppDescription(),
+    appVersion: getAppVersion(),
+  };
 }
 
 function sanitizeEnvValue(value: string): string {

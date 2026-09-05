@@ -3,13 +3,22 @@ import {
   ChatRole,
   ApiError,
   ApiErrorCode,
+  ApiErrorCategory,
 } from "@/lib/shared/types";
-import { getApiKeySource, getAppName, getReferer, getRuntimeApiKey } from "./config";
+import {
+  getApiKeySource,
+  getAppName,
+  getDefaultRequestTimeoutMs,
+  getReferer,
+  getRuntimeApiKey,
+} from "./config";
 
 export const OPENROUTER_ENDPOINT =
   "https://openrouter.ai/api/v1/chat/completions";
 
 const VALID_ROLES: ChatRole[] = ["system", "user", "assistant"];
+const MAX_MESSAGES = 200;
+const MAX_CONTENT_LENGTH = 100000;
 
 export interface RequestOpenRouterParams {
   messages: ChatMessage[];
@@ -22,13 +31,65 @@ export interface RequestOpenRouterParams {
   timeoutMs?: number;
 }
 
+export function errorCategoryForCode(
+  code: ApiErrorCode
+): ApiErrorCategory {
+  switch (code) {
+    case "missing_api_key":
+      return "configuration";
+    case "invalid_request":
+    case "invalid_model":
+      return "configuration";
+    case "rate_limited":
+      return "rate_limit";
+    case "insufficient_credits":
+      return "authentication";
+    case "model_unavailable":
+      return "model";
+    case "context_limit":
+      return "context_limit";
+    case "timeout":
+    case "network_error":
+    case "upstream_error":
+      return "network";
+    case "aborted":
+      return "server";
+    case "openrouter_error":
+      return "server";
+    case "unknown":
+    default:
+      return "unknown";
+  }
+}
+
+function redactSecrets(value: string): string {
+  return value
+    .replace(/sk-or-v[0-9a-zA-Z_-]+/gi, "[REDACTED]")
+    .replace(/Bearer\s+[A-Za-z0-9._-]+/gi, "Bearer [REDACTED]");
+}
+
 export function makeApiError(
   code: ApiErrorCode,
   message: string,
   detail?: string,
-  status?: number
+  status?: number,
+  options?: { category?: ApiErrorCategory; retryable?: boolean }
 ): ApiError {
-  return { code, message, detail, status };
+  const retryable =
+    options?.retryable ??
+    (code === "rate_limited" ||
+      code === "timeout" ||
+      code === "network_error" ||
+      code === "upstream_error" ||
+      code === "openrouter_error");
+  return {
+    code,
+    message,
+    detail: detail ? redactSecrets(detail) : undefined,
+    status,
+    category: options?.category ?? errorCategoryForCode(code),
+    retryable,
+  };
 }
 
 function isAbortError(error: unknown): boolean {
@@ -58,6 +119,13 @@ function normalizeMessages(messages: ChatMessage[]): ChatMessage[] {
       "The `messages` array must contain at least one item."
     );
   }
+  if (messages.length > MAX_MESSAGES) {
+    throw makeApiError(
+      "invalid_request",
+      "The conversation is too long to send.",
+      `OpenRouter requests are limited to ${MAX_MESSAGES} messages. Start a new conversation and try again.`
+    );
+  }
 
   return messages.map((message, index) => {
     if (typeof message !== "object" || message === null) {
@@ -83,6 +151,14 @@ function normalizeMessages(messages: ChatMessage[]): ChatMessage[] {
         `Messages[${index}].content must be a non-empty string.`
       );
     }
+    if (content.length > MAX_CONTENT_LENGTH) {
+      throw makeApiError(
+        "invalid_request",
+        "A message is too long.",
+        `Messages[${index}].content exceeds the ${MAX_CONTENT_LENGTH}-character limit.`
+      );
+    }
+    // Strip client-only fields (id, feedback, interrupted) before sending.
     return { role, content };
   });
 }
@@ -107,7 +183,7 @@ export function validateModel(model: unknown): string {
     throw makeApiError(
       "invalid_model",
       "The selected model identifier contains unsupported characters.",
-      `Model \"${trimmed}\" is not a valid OpenRouter model identifier.`
+      `Model "${redactSecrets(trimmed)}" is not a valid OpenRouter model identifier.`
     );
   }
   return trimmed;
@@ -168,14 +244,14 @@ export async function requestOpenRouter(
     throw makeApiError(
       "missing_api_key",
       "OpenRouter API key is missing.",
-      "Set OPENROUTER_API_KEY in .env.local, or add it in Settings > API Configuration."
+      "Set OPENROUTER_API_KEY in .env.local, or add it in Settings > OpenRouter."
     );
   }
 
   const { body } = buildRequestBody(params);
 
   const controller = new AbortController();
-  const timeoutMs = params.timeoutMs ?? 120000;
+  const timeoutMs = params.timeoutMs ?? getDefaultRequestTimeoutMs();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   const signals = [controller.signal];
   if (params.signal) {
@@ -202,7 +278,7 @@ export async function requestOpenRouter(
         throw makeApiError(
           "timeout",
           "The request to OpenRouter timed out.",
-          "OpenRouter did not respond within the configured time limit."
+          `OpenRouter did not respond within ${Math.round(timeoutMs / 1000)} seconds.`
         );
       }
       throw makeApiError(
@@ -250,15 +326,17 @@ async function parseOpenRouterResponseError(response: Response): Promise<ApiErro
       "missing_api_key",
       "OpenRouter rejected the API key.",
       "Please check your OpenRouter API key in Settings or the OPENROUTER_API_KEY environment variable.",
-      status
+      status,
+      { category: "authentication", retryable: false }
     );
   }
   if (status === 404) {
     return makeApiError(
       "model_unavailable",
       "The selected model is unavailable.",
-      `${detail || upstreamMessage}`,
-      status
+      "This model may have been removed or renamed. Use the model selector to refresh available models and pick another one.",
+      status,
+      { retryable: true }
     );
   }
   if (status === 429) {
@@ -274,31 +352,34 @@ async function parseOpenRouterResponseError(response: Response): Promise<ApiErro
       "insufficient_credits",
       "Insufficient OpenRouter credits.",
       `${detail || upstreamMessage}`,
-      status
+      status,
+      { category: "authentication", retryable: false }
     );
   }
   if (status >= 500) {
     return makeApiError(
       "openrouter_error",
       "OpenRouter returned an error.",
-      `${detail || upstreamMessage}`,
+      detail || upstreamMessage,
       status
     );
   }
   if (/context|too long|maximum.*token/i.test(upstreamMessage)) {
     return makeApiError(
-      "openrouter_error",
+      "context_limit",
       "The request exceeded the model's context limit.",
-      `${detail || upstreamMessage}`,
-      status
+      `${detail || upstreamMessage}\n\nTry shortening the conversation or switching to a model with a larger context window.`,
+      status,
+      { retryable: true }
     );
   }
 
   return makeApiError(
     "openrouter_error",
     "The selected model returned an error.",
-    `${detail || upstreamMessage}`,
-    status
+    `${detail || upstreamMessage}\n\nYou can refresh the model list and select another model.`,
+    status,
+    { retryable: true }
   );
 }
 

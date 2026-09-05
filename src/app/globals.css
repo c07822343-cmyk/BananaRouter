@@ -3,43 +3,43 @@
 @tailwind utilities;
 
 :root {
-  --background: 0 0% 100%;
-  --foreground: 222 47% 11%;
+  --background: 224 30% 98%;
+  --foreground: 224 40% 12%;
   --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --primary: 243 75% 59%;
+  --card-foreground: 224 40% 12%;
+  --primary: 245 70% 55%;
   --primary-foreground: 0 0% 100%;
-  --secondary: 228 14% 96%;
-  --secondary-foreground: 222 47% 11%;
-  --muted: 228 14% 96%;
-  --muted-foreground: 220 9% 44%;
-  --accent: 243 100% 96%;
-  --accent-foreground: 243 75% 40%;
-  --destructive: 0 72% 51%;
+  --secondary: 226 22% 94%;
+  --secondary-foreground: 224 40% 12%;
+  --muted: 226 22% 94%;
+  --muted-foreground: 224 12% 42%;
+  --accent: 245 65% 95%;
+  --accent-foreground: 245 55% 42%;
+  --destructive: 0 72% 48%;
   --destructive-foreground: 0 0% 100%;
-  --border: 220 14% 90%;
-  --input: 220 14% 88%;
-  --ring: 243 75% 59%;
+  --border: 224 18% 87%;
+  --input: 224 16% 84%;
+  --ring: 245 70% 55%;
 }
 
 .dark {
-  --background: 222 47% 7%;
-  --foreground: 210 20% 96%;
-  --card: 222 44% 10%;
-  --card-foreground: 210 20% 96%;
-  --primary: 243 80% 68%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 220 30% 15%;
-  --secondary-foreground: 210 20% 96%;
-  --muted: 220 30% 15%;
-  --muted-foreground: 220 9% 62%;
-  --accent: 243 40% 20%;
-  --accent-foreground: 243 90% 82%;
-  --destructive: 0 63% 48%;
+  --background: 228 30% 6%;
+  --foreground: 220 18% 94%;
+  --card: 227 24% 10%;
+  --card-foreground: 220 18% 94%;
+  --primary: 245 85% 67%;
+  --primary-foreground: 224 40% 8%;
+  --secondary: 226 24% 14%;
+  --secondary-foreground: 220 18% 94%;
+  --muted: 226 24% 15%;
+  --muted-foreground: 222 12% 62%;
+  --accent: 245 34% 20%;
+  --accent-foreground: 245 85% 84%;
+  --destructive: 0 62% 46%;
   --destructive-foreground: 0 0% 100%;
-  --border: 220 25% 18%;
-  --input: 220 25% 20%;
-  --ring: 243 80% 68%;
+  --border: 226 22% 20%;
+  --input: 226 22% 22%;
+  --ring: 245 85% 67%;
 }
 
 * {
@@ -56,6 +56,7 @@ body {
   color: hsl(var(--foreground));
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  text-rendering: optimizeLegibility;
 }
 
 ::selection {
@@ -134,6 +135,14 @@ body {
 .prose-chat blockquote {
   @apply border-l-4 border-[hsl(var(--border))] pl-4 text-[hsl(var(--muted-foreground))] italic;
 }
+.prose-chat hr {
+  @apply my-4 border-[hsl(var(--border))];
+}
+.prose-chat img {
+  @apply my-3 max-w-full rounded-lg;
+}
+
+/* Code */
 .prose-chat code:not(pre code) {
   @apply rounded bg-[hsl(var(--muted))] px-1.5 py-0.5 text-[0.85em] font-mono;
 }
@@ -143,6 +152,12 @@ body {
 .prose-chat pre code {
   @apply block overflow-x-auto p-4 text-[13px] leading-6 font-mono;
 }
+.prose-chat :not(pre) > code,
+.prose-chat code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Table */
 .prose-chat table {
   @apply my-3 w-full border-collapse overflow-hidden rounded-lg border border-[hsl(var(--border))] text-sm;
 }
@@ -152,9 +167,71 @@ body {
 .prose-chat td {
   @apply border-b border-[hsl(var(--border))] px-3 py-2 align-top;
 }
-.prose-chat hr {
-  @apply my-4 border-[hsl(var(--border))];
+
+/* Highlight.js — light/dark balanced theme */
+.hljs {
+  color: hsl(var(--foreground));
 }
-.prose-chat img {
-  @apply my-3 max-w-full rounded-lg;
+.hljs-comment,
+.hljs-quote {
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-subst {
+  color: #7c3aed;
+}
+.dark .hljs-keyword,
+.dark .hljs-selector-tag,
+.dark .hljs-subst {
+  color: #c4b5fd;
+}
+.hljs-string,
+.hljs-doctag,
+.hljs-regexp {
+  color: #16a34a;
+}
+.dark .hljs-string,
+.dark .hljs-doctag,
+.dark .hljs-regexp {
+  color: #86efac;
+}
+.hljs-number,
+.hljs-literal,
+.hljs-variable {
+  color: #ea580c;
+}
+.dark .hljs-number,
+.dark .hljs-literal,
+.dark .hljs-variable {
+  color: #fdba74;
+}
+.hljs-title,
+.hljs-section,
+.hljs-selector-id {
+  color: #2563eb;
+}
+.dark .hljs-title,
+.dark .hljs-section,
+.dark .hljs-selector-id {
+  color: #93c5fd;
+}
+
+/* Long conversation content-visibility for render performance */
+.content-sparse {
+  content-visibility: auto;
+  contain-intrinsic-size: 96px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

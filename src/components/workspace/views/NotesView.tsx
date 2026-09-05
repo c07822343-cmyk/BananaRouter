@@ -10,7 +10,7 @@ import { loadSettings } from "@/lib/client/settings";
 const COLORS: Record<string, string> = {
   default: "bg-white dark:bg-[#303134]",
   yellow: "bg-[#fef7e0] dark:bg-[#5a4a1a]",
-  blue: "bg-[#e8f0fe] dark:bg-[#1e3a5f]",
+  blue: "bg-[#FFFBEB] dark:bg-[#1e3a5f]",
   green: "bg-[#e6f4ea] dark:bg-[#1e3a2a]",
   pink: "bg-[#fce8e6] dark:bg-[#4a1e1e]",
 };
@@ -57,7 +57,7 @@ export function NotesView() {
           <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search notes" className="w-full rounded-full bg-[#f1f3f4] py-2 pl-9 pr-3 text-sm dark:bg-[#303134]" />
         </div>
-        <button onClick={() => { const n = createNote({ title: "Untitled", content: "", color: "default" }); setSelected(n.id); }} className="ml-auto rounded-full bg-[#1a73e8] px-4 py-2 text-sm font-medium text-white"><Plus size={14} className="inline" /> Note</button>
+        <button onClick={() => { const n = createNote({ title: "Untitled", content: "", color: "default" }); setSelected(n.id); }} className="ml-auto rounded-full bg-[#b45309] px-4 py-2 text-sm font-medium text-white"><Plus size={14} className="inline" /> Note</button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -74,7 +74,7 @@ export function NotesView() {
                 <div
                   key={n.id}
                   onClick={() => setSelected(n.id)}
-                  className={`mb-4 break-inside-avoid rounded-2xl border p-3 shadow-sm hover:shadow-md ${COLORS[n.color] ?? COLORS.default} ${selected === n.id ? "ring-2 ring-[#1a73e8]" : ""} ${n.pinned ? "border-[#fbbc04]" : "border-[hsl(var(--border))]"}`}
+                  className={`mb-4 break-inside-avoid rounded-2xl border p-3 shadow-sm hover:shadow-md ${COLORS[n.color] ?? COLORS.default} ${selected === n.id ? "ring-2 ring-[#b45309]" : ""} ${n.pinned ? "border-[#fbbc04]" : "border-[hsl(var(--border))]"}`}
                 >
                   {n.title && <div className="truncate text-sm font-medium">{n.title}</div>}
                   <div className="mt-1 whitespace-pre-wrap text-sm leading-6">{n.content.slice(0, 300) || <span className="text-[hsl(var(--muted-foreground))]">Empty note</span>}</div>
@@ -95,7 +95,7 @@ export function NotesView() {
                     <button onClick={(e) => { e.stopPropagation(); const c = prompt("Color: default, yellow, blue, green, pink", n.color) ?? n.color; updateNote(n.id, { color: c }); }} className="rounded-full p-1 hover:bg-black/5"><Palette size={12} /></button>
                     <button onClick={(e) => { e.stopPropagation(); updateNote(n.id, { archived: true }); }} className="rounded-full p-1 hover:bg-black/5"><Archive size={12} /></button>
                     <span className="ml-auto flex gap-1">
-                      <button onClick={(e) => { e.stopPropagation(); handleAi(n, "summarize"); }} className="rounded-full bg-[#e8f0fe] px-2 py-1 text-[11px]">Summarize</button>
+                      <button onClick={(e) => { e.stopPropagation(); handleAi(n, "summarize"); }} className="rounded-full bg-[#FFFBEB] px-2 py-1 text-[11px]">Summarize</button>
                       <button onClick={(e) => { e.stopPropagation(); if (confirm("Delete note?")) deleteNote(n.id); }} className="rounded-full p-1 hover:bg-black/5"><Trash2 size={12} /></button>
                     </span>
                   </div>
@@ -119,9 +119,9 @@ export function NotesView() {
                 <input value={active.labels.join(", ")} onChange={(e) => updateNote(active.id, { labels: e.target.value.split(",").map((s) => s.trim()).filter(Boolean) })} placeholder="work, ideas" className="mt-1 w-full rounded-xl border bg-[#f8f9fa] px-3 py-2 text-sm dark:bg-[#303134]" />
               </div>
               <div className="mt-3 flex flex-wrap gap-1">
-                <button onClick={() => handleAi(active, "summarize")} className="rounded-full bg-[#e8f0fe] px-3 py-1.5 text-xs">Summarize</button>
-                <button onClick={() => handleAi(active, "organize")} className="rounded-full bg-[#e8f0fe] px-3 py-1.5 text-xs">Organize</button>
-                <button onClick={() => handleAi(active, "expand")} className="rounded-full bg-[#e8f0fe] px-3 py-1.5 text-xs">Expand</button>
+                <button onClick={() => handleAi(active, "summarize")} className="rounded-full bg-[#FFFBEB] px-3 py-1.5 text-xs">Summarize</button>
+                <button onClick={() => handleAi(active, "organize")} className="rounded-full bg-[#FFFBEB] px-3 py-1.5 text-xs">Organize</button>
+                <button onClick={() => handleAi(active, "expand")} className="rounded-full bg-[#FFFBEB] px-3 py-1.5 text-xs">Expand</button>
                 <button onClick={() => handleAi(active, "doc")} className="rounded-full bg-white px-3 py-1.5 text-xs shadow"><FileText size={12} className="inline" /> To document</button>
                 <button onClick={() => { const t = prompt("New checklist item"); if (t) updateNote(active.id, { checklist: [...(active.checklist ?? []), { id: `c_${Date.now()}`, text: t, checked: false }] }); }} className="rounded-full border px-3 py-1.5 text-xs">+ Checklist</button>
               </div>

@@ -59,11 +59,11 @@ export function AIToolsView() {
   return (
     <div className="flex h-full">
       <div className="hidden w-[280px] shrink-0 flex-col border-r bg-[#f8f9fa] p-3 dark:bg-[#202124] md:flex">
-        <div className="mb-2 flex items-center gap-2 px-2 text-sm font-medium"><Sparkles size={16} className="text-[#1a73e8]" /> AI Toolbox</div>
+        <div className="mb-2 flex items-center gap-2 px-2 text-sm font-medium"><Sparkles size={16} className="text-[#b45309]" /> AI Toolbox</div>
         <div className="space-y-1 overflow-y-auto">
           {TOOLS.map((t) => (
             <button key={t.id} onClick={() => { setActive(t.id as AIToolId); setOutput(""); }} className={`flex w-full items-start gap-3 rounded-xl px-3 py-2.5 text-left ${active === t.id ? "bg-white shadow dark:bg-[#303134]" : "hover:bg-white dark:hover:bg-white/10"}`}>
-              <span className="rounded-lg bg-[#e8f0fe] p-1.5 text-[#1a73e8] dark:bg-[#394457] dark:text-[#8ab4f8]">{t.icon}</span>
+              <span className="rounded-lg bg-[#FFFBEB] p-1.5 text-[#b45309] dark:bg-[#2a2210] dark:text-[#fcd34d]">{t.icon}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-sm font-medium">{t.title}</span>
                 <span className="block truncate text-xs text-[hsl(var(--muted-foreground))]">{t.desc}</span>
@@ -84,7 +84,7 @@ export function AIToolsView() {
             <label className="mb-1 text-xs font-medium">Input</label>
             <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder={tool.placeholder} className="min-h-[180px] flex-1 rounded-2xl border bg-[#f8f9fa] p-3 text-sm dark:bg-[#303134]" />
             <div className="mt-2 flex gap-2">
-              <button onClick={run} disabled={loading || !input.trim()} className="rounded-full bg-[#1a73e8] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"><Sparkles size={14} className="inline" /> {loading ? "Running…" : "Run tool"}</button>
+              <button onClick={run} disabled={loading || !input.trim()} className="rounded-full bg-[#b45309] px-5 py-2 text-sm font-medium text-white disabled:opacity-50"><Sparkles size={14} className="inline" /> {loading ? "Running…" : "Run tool"}</button>
               <button onClick={() => setInput("")} className="rounded-full border bg-white px-4 py-2 text-sm dark:bg-[#303134]">Clear</button>
             </div>
           </div>
@@ -94,7 +94,7 @@ export function AIToolsView() {
             <div className="min-h-[180px] flex-1 overflow-y-auto whitespace-pre-wrap rounded-2xl border bg-white p-3 text-sm leading-6 dark:bg-[#303134]">{output || <span className="text-[hsl(var(--muted-foreground))]">Output will appear here. For important operations you must confirm before applying.</span>}</div>
             {output && (
               <div className="mt-2 flex flex-wrap gap-2">
-                <button onClick={() => handleApply("doc")} className="rounded-full bg-[#e8f0fe] px-3 py-1.5 text-xs font-medium text-[#1a73e8]">Create document</button>
+                <button onClick={() => handleApply("doc")} className="rounded-full bg-[#FFFBEB] px-3 py-1.5 text-xs font-medium text-[#b45309]">Create document</button>
                 <button onClick={() => handleApply("task")} className="rounded-full bg-[#fef7e0] px-3 py-1.5 text-xs">Create task</button>
                 <button onClick={() => handleApply("copy")} className="rounded-full border bg-white px-3 py-1.5 text-xs">Copy</button>
               </div>

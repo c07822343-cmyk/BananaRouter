@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { ChatMessage } from "@/lib/shared/types";
 import { MarkdownMessage } from "./MarkdownMessage";
+import { BananaLogo } from "@/components/branding/BananaLogo";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -60,36 +61,35 @@ export function MessageBubble({
   const showFeedback = !isUser && !isStreaming && !!onFeedback;
   const needsRetry = !isUser && (message.interrupted || !message.content.trim());
 
-  return (
-    <div
-      className={clsx(
-        "content-sparse flex animate-fade-in gap-3",
-        isUser ? "justify-end" : "justify-start"
-      )}
-    >
-      {!isUser && (
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-sm">
-          <Bot size={16} />
+  if (isUser) {
+    return (
+      <div className="group flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#1a1a1a] text-white dark:bg-white dark:text-[#1a1a1a] shadow-sm">
+            <User size={14} />
+          </div>
+          <span className="text-sm font-semibold tracking-tight">You</span>
+          {onEdit && !editing && (
+            <button
+              aria-label="Edit message"
+              onClick={() => {
+                setEditValue(message.content);
+                setEditing(true);
+              }}
+              className="ml-auto rounded-full p-1.5 text-[hsl(var(--muted-foreground))] opacity-0 transition group-hover:opacity-100 hover:bg-[hsl(var(--muted))]"
+            >
+              <Pencil size={13} />
+            </button>
+          )}
         </div>
-      )}
-
-      <div
-        className={clsx(
-          "group max-w-[88%] rounded-2xl px-4 py-3 md:max-w-[min(720px,80%)]",
-          isUser
-            ? "bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"
-            : "border border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--card-foreground))]",
-          isStreaming && "border-[hsl(var(--primary))]/40"
-        )}
-      >
-        {editing && isUser ? (
-          <div>
+        {editing ? (
+          <div className="ml-[36px]">
             <textarea
               autoFocus
               value={editValue}
               onChange={(e) => setEditValue(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                   e.preventDefault();
                   if (editValue.trim()) {
                     onEdit?.(editValue.trim());
@@ -99,7 +99,7 @@ export function MessageBubble({
                 if (e.key === "Escape") setEditing(false);
               }}
               aria-label="Edit message"
-              className="focus-ring min-h-[80px] w-[min(80vw,520px)] resize-y rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2 text-[15px] leading-7 text-[hsl(var(--foreground))]"
+              className="focus-ring min-h-[80px] w-full resize-y rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3.5 py-3 text-[15px] leading-7 text-[hsl(var(--foreground))]"
             />
             <div className="mt-2 flex gap-2">
               <button
@@ -109,107 +109,102 @@ export function MessageBubble({
                     setEditing(false);
                   }
                 }}
-                className="focus-ring rounded-lg bg-[hsl(var(--primary))] px-3 py-1.5 text-xs font-medium text-[hsl(var(--primary-foreground))]"
+                className="rounded-full bg-[#1a1a1a] dark:bg-white px-4 py-1.5 text-xs font-semibold text-white dark:text-[#1a1a1a]"
               >
                 Save & resend
               </button>
               <button
                 onClick={() => setEditing(false)}
-                className="focus-ring rounded-lg border border-[hsl(var(--border))] px-3 py-1.5 text-xs"
+                className="rounded-full border border-[hsl(var(--border))] px-4 py-1.5 text-xs hover:bg-[hsl(var(--muted))]"
               >
                 Cancel
               </button>
             </div>
           </div>
-        ) : isUser ? (
-          <div className="whitespace-pre-wrap break-words text-[15px] leading-7">
-            {message.content}
-          </div>
         ) : (
-          <MarkdownMessage content={message.content} />
-        )}
-
-        {!isUser && !isStreaming && (
-          <div className="mt-2 flex flex-wrap items-center gap-1 border-t border-[hsl(var(--border))] pt-2 sm:opacity-0 sm:transition sm:group-hover:opacity-100 sm:group-focus-within:opacity-100">
-            <button
-              aria-label="Copy response"
-              onClick={handleCopy}
-              className="focus-ring flex items-center gap-1 rounded px-2 py-1.5 text-[11px] text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]"
-            >
-              {copied ? <Check size={12} /> : <Copy size={12} />}
-              {copied ? "Copied!" : "Copy"}
-            </button>
-            {onRegenerate && isLast && (
-              <button
-                aria-label="Regenerate response"
-                onClick={onRegenerate}
-                className="focus-ring flex items-center gap-1 rounded px-2 py-1.5 text-[11px] text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]"
-              >
-                <RotateCcw size={12} />
-                Regenerate
-              </button>
-            )}
-            {needsRetry && onRetry && isLast && (
-              <button
-                aria-label="Retry response"
-                onClick={onRetry}
-                className="focus-ring flex items-center gap-1 rounded px-2 py-1.5 text-[11px] text-[hsl(var(--destructive))] transition hover:bg-[hsl(var(--destructive))]/10"
-              >
-                <AlertCircle size={12} />
-                Retry
-              </button>
-            )}
-            {message.interrupted && (
-              <span className="flex items-center gap-1 px-1 text-[11px] text-[hsl(var(--muted-foreground))]">
-                <AlertCircle size={11} /> interrupted
-              </span>
-            )}
-            {showFeedback && message.id && (
-              <>
-                <button
-                  aria-label="Good response"
-                  onClick={() => onFeedback?.(message.id!, "up")}
-                  className={clsx(
-                    "focus-ring rounded px-2 py-1.5 text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]",
-                    message.feedback === "up" &&
-                      "bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]"
-                  )}
-                >
-                  <ThumbsUp size={12} />
-                </button>
-                <button
-                  aria-label="Bad response"
-                  onClick={() => onFeedback?.(message.id!, "down")}
-                  className={clsx(
-                    "focus-ring rounded px-2 py-1.5 text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--accent))] hover:text-[hsl(var(--accent-foreground))]",
-                    message.feedback === "down" &&
-                      "bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))]"
-                  )}
-                >
-                  <ThumbsDown size={12} />
-                </button>
-              </>
-            )}
+          <div className="ml-[36px] whitespace-pre-wrap break-words text-[15px] leading-7">
+            {message.content}
           </div>
         )}
       </div>
+    );
+  }
 
-      {isUser && (
-        <div className="flex flex-col items-end gap-1">
-          <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]">
-            <User size={16} />
-          </div>
-          {!editing && onEdit && (
+  // Assistant – document style (no bubble)
+  return (
+    <div className="group flex flex-col gap-3">
+      <div className="flex items-center gap-2">
+        <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-[#F6C446] shadow-sm">
+          {/* subtle B – but use BananaLogo fallback size */}
+          <span className="text-[11px] font-bold text-[#1a1a1a]">B</span>
+        </span>
+        <span className="text-sm font-semibold tracking-tight">BananaRouter</span>
+        <span className="text-xs font-normal text-[hsl(var(--muted-foreground))] hidden sm:inline">· Powered by OpenRouter</span>
+        {isStreaming && <span className="ml-1 inline-flex items-center rounded-full bg-[#FFFBEB] dark:bg-[#2a2210] border border-[#FDE68A]/60 px-2 py-0.5 text-[11px] font-medium text-[#92400e] dark:text-[#fcd34d]">Streaming…</span>}
+      </div>
+      <div className={clsx("ml-[36px] prose-chat", isStreaming && "opacity-90")}>
+        <MarkdownMessage content={message.content} />
+      </div>
+
+      {/* Actions bar – discrete, shows on hover */}
+      {!isStreaming && (
+        <div className="ml-[36px] flex flex-wrap items-center gap-1 border-t border-[hsl(var(--border))]/60 pt-2 opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+          <button
+            aria-label="Copy response"
+            onClick={handleCopy}
+            className="flex items-center gap-1 rounded-full border border-[hsl(var(--border))] bg-white dark:bg-[#252529] px-2.5 py-1 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:bg-[#FFFBEB] dark:hover:bg-[#2a2210] transition"
+          >
+            {copied ? <Check size={12} /> : <Copy size={12} />}
+            {copied ? "Copied" : "Copy"}
+          </button>
+          {onRegenerate && isLast && (
             <button
-              aria-label="Edit message"
-              onClick={() => {
-                setEditValue(message.content);
-                setEditing(true);
-              }}
-              className="focus-ring mt-1 rounded p-1.5 text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--muted))]"
+              aria-label="Regenerate response"
+              onClick={onRegenerate}
+              className="flex items-center gap-1 rounded-full border border-[hsl(var(--border))] bg-white dark:bg-[#252529] px-2.5 py-1 text-xs font-medium text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition"
             >
-              <Pencil size={13} />
+              <RotateCcw size={12} />
+              Regenerate
             </button>
+          )}
+          {needsRetry && onRetry && isLast && (
+            <button
+              aria-label="Retry response"
+              onClick={onRetry}
+              className="flex items-center gap-1 rounded-full bg-[#fef2f2] border border-red-200 px-2.5 py-1 text-xs font-medium text-[#991b1b] hover:bg-red-50 transition"
+            >
+              <AlertCircle size={12} />
+              Retry
+            </button>
+          )}
+          {message.interrupted && (
+            <span className="flex items-center gap-1 px-2 text-[11px] text-[hsl(var(--muted-foreground))]">
+              <AlertCircle size={11} /> interrupted
+            </span>
+          )}
+          {showFeedback && message.id && (
+            <>
+              <button
+                aria-label="Good response"
+                onClick={() => onFeedback?.(message.id!, "up")}
+                className={clsx(
+                  "rounded-full border p-1.5 text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--muted))]",
+                  message.feedback === "up" && "bg-[#FFFBEB] text-[#92400e] border-[#FDE68A]"
+                )}
+              >
+                <ThumbsUp size={12} />
+              </button>
+              <button
+                aria-label="Bad response"
+                onClick={() => onFeedback?.(message.id!, "down")}
+                className={clsx(
+                  "rounded-full border p-1.5 text-[hsl(var(--muted-foreground))] transition hover:bg-[hsl(var(--muted))]",
+                  message.feedback === "down" && "bg-[#FFFBEB] text-[#92400e] border-[#FDE68A]"
+                )}
+              >
+                <ThumbsDown size={12} />
+              </button>
+            </>
           )}
         </div>
       )}

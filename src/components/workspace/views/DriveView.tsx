@@ -121,7 +121,7 @@ export function DriveView({ onAskFile }: { onAskFile?: (f: WorkspaceFile) => voi
 
   const iconFor = (f: WorkspaceFile) => {
     if (f.kind === "image") return <ImageIcon size={20} className="text-[#34a853]" />;
-    if (f.kind === "csv" || f.kind === "json" || f.name.endsWith(".csv")) return <Table2 size={20} className="text-[#1a73e8]" />;
+    if (f.kind === "csv" || f.kind === "json" || f.name.endsWith(".csv")) return <Table2 size={20} className="text-[#b45309]" />;
     if (f.kind === "pdf") return <FileText size={20} className="text-[#ea4335]" />;
     return <FileIcon size={20} className="text-[#5f6368]" />;
   };
@@ -130,7 +130,7 @@ export function DriveView({ onAskFile }: { onAskFile?: (f: WorkspaceFile) => voi
     <div className="flex h-full flex-col" onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}>
       <div className="flex items-center gap-2 border-b border-[hsl(var(--border))] bg-white px-4 py-2.5 dark:bg-[#202124]">
         <div className="flex items-center gap-1 text-sm">
-          <button onClick={() => setCurrentFolder(null)} className={`rounded px-2 py-1 ${!currentFolder ? "bg-[#e8f0fe] text-[#1a73e8]" : "hover:bg-[hsl(var(--muted))]"}`}>My Files</button>
+          <button onClick={() => setCurrentFolder(null)} className={`rounded px-2 py-1 ${!currentFolder ? "bg-[#FFFBEB] text-[#b45309]" : "hover:bg-[hsl(var(--muted))]"}`}>My Files</button>
           {breadcrumbs.map((b) => (
             <span key={b.id} className="flex items-center gap-1">
               <span className="text-[hsl(var(--muted-foreground))]">/</span>
@@ -139,7 +139,7 @@ export function DriveView({ onAskFile }: { onAskFile?: (f: WorkspaceFile) => voi
           ))}
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <label className="flex cursor-pointer items-center gap-2 rounded-full bg-[#1a73e8] px-4 py-2 text-sm font-medium text-white hover:bg-[#1765cc]">
+          <label className="flex cursor-pointer items-center gap-2 rounded-full bg-[#b45309] px-4 py-2 text-sm font-medium text-white hover:bg-[#92400e]">
             <Upload size={14} /> Upload
             <input ref={inputRef} type="file" multiple className="hidden" onChange={handleUpload} accept=".txt,.md,.csv,.json,.pdf,image/*" />
           </label>
@@ -202,7 +202,7 @@ export function DriveView({ onAskFile }: { onAskFile?: (f: WorkspaceFile) => voi
                     <div className="truncate text-sm font-medium">{f.name}</div>
                     <div className="text-xs text-[hsl(var(--muted-foreground))]">{(f.size / 1024).toFixed(1)} KB • {f.kind}</div>
                     <div className="mt-2 flex flex-wrap gap-1">
-                      <button onClick={() => setPreview(f)} className="rounded-full bg-[#e8f0fe] px-2 py-1 text-xs text-[#1a73e8]"><Eye size={10} className="inline" /> Preview</button>
+                      <button onClick={() => setPreview(f)} className="rounded-full bg-[#FFFBEB] px-2 py-1 text-xs text-[#b45309]"><Eye size={10} className="inline" /> Preview</button>
                       <button onClick={() => askAi(f, "Summarize this file")} className="rounded-full bg-[#fef7e0] px-2 py-1 text-xs">Summarize</button>
                     </div>
                   </div>
@@ -262,7 +262,7 @@ export function DriveView({ onAskFile }: { onAskFile?: (f: WorkspaceFile) => voi
                     <pre className="whitespace-pre-wrap rounded-xl bg-[#f8f9fa] p-3 text-xs dark:bg-[#303134]">{preview.textContent?.slice(0, 5000) || "No preview available."}</pre>
                   )}
                   <div className="mt-3 flex gap-2">
-                    <button onClick={() => askAi(preview, "Summarize this")} className="rounded-full bg-[#1a73e8] px-3 py-1.5 text-xs font-medium text-white">Ask AI: Summarize</button>
+                    <button onClick={() => askAi(preview, "Summarize this")} className="rounded-full bg-[#b45309] px-3 py-1.5 text-xs font-medium text-white">Ask AI: Summarize</button>
                     <button onClick={() => askAi(preview, "Extract action items")} className="rounded-full bg-white px-3 py-1.5 text-xs shadow">Action items</button>
                     <button
                       onClick={() => {

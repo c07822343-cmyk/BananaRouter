@@ -79,7 +79,7 @@ export function DocumentsView({ onOpenInChat }: { onOpenInChat?: (doc: DocumentE
         <FileText size={32} className="mx-auto mb-3 text-[hsl(var(--muted-foreground))]" />
         <h2 className="text-lg font-medium">No documents yet</h2>
         <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Create your first document or import a file.</p>
-        <button onClick={handleCreate} className="mt-4 rounded-full bg-[#1a73e8] px-5 py-2 text-sm font-medium text-white">New document</button>
+        <button onClick={handleCreate} className="mt-4 rounded-full bg-[#b45309] px-5 py-2 text-sm font-medium text-white">New document</button>
       </div>
     );
   }
@@ -100,7 +100,7 @@ export function DocumentsView({ onOpenInChat }: { onOpenInChat?: (doc: DocumentE
         <div className="flex-1 overflow-y-auto px-2">
           {filtered.map((d) => (
             <button key={d.id} onClick={() => setActiveId(d.id)} className={`mb-1 flex w-full items-start gap-2 rounded-xl px-3 py-2.5 text-left ${activeId === d.id ? "bg-white shadow dark:bg-[#303134]" : "hover:bg-white dark:hover:bg-white/10"}`}>
-              <FileText size={16} className="mt-0.5 shrink-0 text-[#1a73e8]" />
+              <FileText size={16} className="mt-0.5 shrink-0 text-[#b45309]" />
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm font-medium">{d.title}</span>
                 <span className="block truncate text-xs text-[hsl(var(--muted-foreground))]">{d.content.slice(0, 60) || "Empty"}</span>
@@ -138,15 +138,15 @@ export function DocumentsView({ onOpenInChat }: { onOpenInChat?: (doc: DocumentE
 
             {/* AI toolbar */}
             <div className="flex flex-wrap gap-1 border-b border-[hsl(var(--border))] bg-white px-3 py-2 dark:bg-[#202124]">
-              <span className="mr-2 flex items-center gap-1 text-xs font-medium text-[#1a73e8]"><Wand2 size={12} /> AI tools:</span>
+              <span className="mr-2 flex items-center gap-1 text-xs font-medium text-[#b45309]"><Wand2 size={12} /> AI tools:</span>
               {[
                 { k: "summarize", l: "Summarize" }, { k: "rewrite", l: "Rewrite" }, { k: "expand", l: "Expand" }, { k: "shorten", l: "Shorten" }, { k: "grammar", l: "Fix grammar" }, { k: "continue", l: "Continue" }, { k: "outline", l: "Outline" },
               ].map((b) => (
-                <button key={b.k} disabled={isAiLoading} onClick={() => handleAiAction(b.k, b.l)} className="rounded-full bg-[#e8f0fe] px-2.5 py-1 text-xs font-medium text-[#1a73e8] hover:bg-[#d2e3fc] disabled:opacity-50 dark:bg-[#394457] dark:text-[#8ab4f8]">
+                <button key={b.k} disabled={isAiLoading} onClick={() => handleAiAction(b.k, b.l)} className="rounded-full bg-[#FFFBEB] px-2.5 py-1 text-xs font-medium text-[#b45309] hover:bg-[#FDE68A] disabled:opacity-50 dark:bg-[#2a2210] dark:text-[#fcd34d]">
                   {b.l}
                 </button>
               ))}
-              <button onClick={() => handleAiAction("tone", "Change tone", "professional")} disabled={isAiLoading} className="rounded-full bg-[#e8f0fe] px-2.5 py-1 text-xs dark:bg-[#394457] dark:text-[#8ab4f8]">Professional tone</button>
+              <button onClick={() => handleAiAction("tone", "Change tone", "professional")} disabled={isAiLoading} className="rounded-full bg-[#FFFBEB] px-2.5 py-1 text-xs dark:bg-[#2a2210] dark:text-[#fcd34d]">Professional tone</button>
               <button onClick={() => { if (onOpenInChat) onOpenInChat(active); }} className="ml-auto rounded-full border px-2.5 py-1 text-xs">Ask AI about this</button>
             </div>
 
@@ -197,7 +197,7 @@ export function DocumentsView({ onOpenInChat }: { onOpenInChat?: (doc: DocumentE
                   </div>
                   <div className="flex-1 overflow-y-auto whitespace-pre-wrap rounded-xl border bg-white p-3 text-sm dark:bg-[#202124]">{aiPreview.suggestion}</div>
                   <div className="mt-3 flex gap-2">
-                    <button onClick={() => applyPreview("replace")} className="flex-1 rounded-full bg-[#1a73e8] py-2 text-sm font-medium text-white">Replace</button>
+                    <button onClick={() => applyPreview("replace")} className="flex-1 rounded-full bg-[#b45309] py-2 text-sm font-medium text-white">Replace</button>
                     <button onClick={() => applyPreview("insert")} className="flex-1 rounded-full bg-white py-2 text-sm font-medium shadow">Insert below</button>
                   </div>
                   <button onClick={() => setAiPreview(null)} className="mt-2 rounded-full py-1 text-xs text-[hsl(var(--muted-foreground))]">Cancel</button>
@@ -205,7 +205,7 @@ export function DocumentsView({ onOpenInChat }: { onOpenInChat?: (doc: DocumentE
               )}
             </div>
 
-            {isAiLoading && <div className="border-t bg-[#e8f0fe] px-4 py-2 text-xs text-[#1a73e8] dark:bg-[#394457] dark:text-[#8ab4f8]">AI is generating… {selection ? "using selected text" : "using whole document"} — only selected context is sent to OpenRouter.</div>}
+            {isAiLoading && <div className="border-t bg-[#FFFBEB] px-4 py-2 text-xs text-[#b45309] dark:bg-[#2a2210] dark:text-[#fcd34d]">AI is generating… {selection ? "using selected text" : "using whole document"} — only selected context is sent to OpenRouter.</div>}
           </>
         ) : (
           <div className="p-8 text-center text-sm text-[hsl(var(--muted-foreground))]">Select a document</div>

@@ -195,7 +195,7 @@ function seedExamples(state: WorkspaceState) {
   state.documents.push({
     id: generateId("doc"),
     title: "Welcome Document",
-    content: "# Welcome to OpenRouter Workspace\n\nThis is a Google Docs–style document. Try the **AI tools** in the toolbar: Rewrite, Summarize, Fix grammar, Change tone, Continue writing.\n\n## Features\n\n- Rich text basics\n- AI rewrite with preview\n- Version history\n- Export\n\n> The workspace keeps everything local until you ask AI — then only the selected context is sent to OpenRouter.",
+    content: "# Welcome to BananaRouter\n\nThis is a Google Docs–style document. Try the **AI tools** in the toolbar: Rewrite, Summarize, Fix grammar, Change tone, Continue writing.\n\n## Features\n\n- Rich text basics\n- AI rewrite with preview\n- Version history\n- Export\n\n> The workspace keeps everything local until you ask AI — then only the selected context is sent to OpenRouter.",
     createdAt: t,
     updatedAt: t,
     starred: false,
@@ -244,7 +244,7 @@ function seedExamples(state: WorkspaceState) {
     start: t + 2 * 86400000,
     end: t + 2 * 86400000 + 3600000,
     location: "Home",
-    color: "#1a73e8",
+    color: "#b45309",
     createdAt: t,
     updatedAt: t,
     starred: false,
@@ -318,7 +318,7 @@ export function downloadJson(filename: string, data: unknown) {
 export function buildWorkspaceExport(state: WorkspaceState) {
   const { notifications, ...rest } = state; // exclude transient notifications if desired, but keep them
   return {
-    app: "OpenRouter Workspace",
+    app: "BananaRouter",
     version: WORKSPACE_VERSION,
     exportedAt: new Date().toISOString(),
     workspace: rest,

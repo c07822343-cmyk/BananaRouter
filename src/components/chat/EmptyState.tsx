@@ -1,6 +1,7 @@
 "use client";
 
-import { Sparkles, MessageSquare, ArrowUpRight } from "lucide-react";
+import { Sparkles, MessageSquare, ArrowUpRight, Banana } from "lucide-react";
+import { BananaLogo } from "@/components/branding/BananaLogo";
 
 interface EmptyStateProps {
   appName: string;
@@ -37,29 +38,25 @@ const EXAMPLES: Array<{ title: string; prompt: string }> = [
 
 export function EmptyState({ appName, onPickPrompt }: EmptyStateProps) {
   return (
-    <div className="flex min-h-full flex-col items-center justify-center px-4 py-10 text-center">
-      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-lg">
-        <Sparkles size={26} />
+    <div className="mx-auto flex min-h-full max-w-[var(--chat-max)] flex-col items-center justify-center px-4 py-10 text-center">
+      <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#F6C446] text-[#1a1a1a] shadow-sm">
+        <BananaLogo size={44} />
       </div>
-      <h1 className="text-2xl font-bold tracking-tight md:text-[2rem]">
-        How can I help you today?
+      <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">
+        How can <span className="bg-[#F6C446] px-1.5 rounded">BananaRouter</span> help?
       </h1>
-      <p className="mt-2 max-w-md text-sm text-[hsl(var(--muted-foreground))]">
-        Ask anything or pick an example below. AI inference is provided through
-        the OpenRouter API.
+      <p className="mt-2 max-w-md text-sm leading-6 text-[hsl(var(--muted-foreground))]">
+        Ask anything — draft, summarize, analyze, plan. Your files and chats stay local; AI runs via OpenRouter.
       </p>
 
-      <div className="mt-8 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2">
+      <div className="mt-8 grid w-full max-w-2xl grid-cols-1 gap-3 sm:grid-cols-2 text-left">
         {EXAMPLES.map((example) => (
           <button
             key={example.title}
             onClick={() => onPickPrompt(example.prompt)}
-            className="focus-ring group flex items-start gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-4 text-left transition hover:border-[hsl(var(--primary))] hover:shadow-sm"
+            className="group flex items-start gap-3 rounded-2xl border border-[hsl(var(--border))] bg-white dark:bg-[#1e1e22] p-4 text-left transition hover:border-[#FDE68A] hover:shadow-md hover:bg-[#FFFBEB]/40 dark:hover:bg-[#2a2210]/40"
           >
-            <MessageSquare
-              size={16}
-              className="mt-0.5 shrink-0 text-[hsl(var(--primary))]"
-            />
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#FFFBEB] dark:bg-[#2a2210] border border-[#FDE68A]/50 text-[#b45309]"><MessageSquare size={14} /></span>
             <span className="min-w-0">
               <span className="flex items-center gap-1.5 text-sm font-semibold">
                 {example.title}
@@ -76,9 +73,9 @@ export function EmptyState({ appName, onPickPrompt }: EmptyStateProps) {
         ))}
       </div>
 
-      <div className="mt-10 flex items-center gap-2 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--muted))] px-4 py-2 text-xs text-[hsl(var(--muted-foreground))]">
-        <Sparkles size={12} className="text-[hsl(var(--primary))]" />
-        {appName} · Powered by OpenRouter
+      <div className="mt-10 flex items-center gap-2 rounded-full border border-[#FDE68A]/50 bg-[#FFFBEB] dark:bg-[#2a2210] px-4 py-2 text-xs font-medium text-[#92400e] dark:text-[#fde68a]">
+        <BananaLogo size={16} />
+        BananaRouter · Powered by OpenRouter
       </div>
     </div>
   );

@@ -100,14 +100,14 @@ export function SettingsWorkspaceView() {
             </div>
             <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={settings.streaming} onChange={(e) => setSettings({ ...settings, streaming: e.target.checked })} /> Streaming</label>
             <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={settings.debugLogging} onChange={(e) => setSettings({ ...settings, debugLogging: e.target.checked })} /> Debug logging</label>
-            <button onClick={handleSaveSettings} className="w-full rounded-full bg-[#1a73e8] py-2 text-sm font-medium text-white">Save local settings</button>
+            <button onClick={handleSaveSettings} className="w-full rounded-full bg-[#b45309] py-2 text-sm font-medium text-white">Save local settings</button>
             <div className="border-t pt-3">
               <div className="text-xs font-medium">OpenRouter connection</div>
               <div className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Server: {status ? `${status.apiKeyConfigured ? "Key configured (" + status.apiKeySource + ")" : "No key"} • ${status.model}` : "loading…"}</div>
               <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-or-v1-... (server-side only)" className="mt-2 w-full rounded-xl border bg-[#f8f9fa] px-3 py-2 text-sm dark:bg-[#202124]" type="password" />
               <div className="mt-2 flex gap-2">
                 <button onClick={handleSaveServer} className="flex-1 rounded-full bg-white px-3 py-1.5 text-xs font-medium shadow">Save to server</button>
-                <button onClick={handleTest} disabled={testing} className="flex-1 rounded-full bg-[#e8f0fe] px-3 py-1.5 text-xs font-medium text-[#1a73e8] disabled:opacity-50">{testing ? "Testing…" : "Test connection"}</button>
+                <button onClick={handleTest} disabled={testing} className="flex-1 rounded-full bg-[#FFFBEB] px-3 py-1.5 text-xs font-medium text-[#b45309] disabled:opacity-50">{testing ? "Testing…" : "Test connection"}</button>
               </div>
               {testResult && <div className={`mt-2 rounded-xl p-2 text-xs ${testResult.ok ? "bg-[#e6f4ea] text-[#137333]" : "bg-[#fce8e6] text-[#a50e0e]"}`}>{testResult.message ?? JSON.stringify(testResult)}</div>}
               {usage && <div className="mt-2 rounded-xl bg-[#f1f3f4] p-2 text-xs dark:bg-[#202124]">{usage.message} {usage.available ? `• ${usage.usage}/${usage.limit}` : ""}</div>}
@@ -161,7 +161,7 @@ export function SettingsWorkspaceView() {
               <div className="mt-1 flex gap-1">
                 <input value={memKey} onChange={(e) => setMemKey(e.target.value)} placeholder="e.g., preferConcise" className="flex-1 rounded border bg-white px-2 py-1 text-xs dark:bg-[#303134]" />
                 <input value={memVal} onChange={(e) => setMemVal(e.target.value)} placeholder="value" className="flex-1 rounded border bg-white px-2 py-1 text-xs dark:bg-[#303134]" />
-                <button onClick={() => { if (memKey.trim()) { createMemory(memKey.trim(), memVal.trim() || "true"); setMemKey(""); setMemVal(""); } }} className="rounded-full bg-[#1a73e8] px-3 py-1 text-xs font-medium text-white">Add</button>
+                <button onClick={() => { if (memKey.trim()) { createMemory(memKey.trim(), memVal.trim() || "true"); setMemKey(""); setMemVal(""); } }} className="rounded-full bg-[#b45309] px-3 py-1 text-xs font-medium text-white">Add</button>
               </div>
             </div>
           </div>
@@ -192,7 +192,7 @@ export function SettingsWorkspaceView() {
                   upsertTemplate({ id: generateId("tpl"), title: tplTitle.trim(), content: tplContent.trim(), variables: Array.from(new Set(vars)), createdAt: Date.now(), updatedAt: Date.now() });
                   setTplTitle(""); setTplContent("");
                 }}
-                className="mt-1 w-full rounded-full bg-[#1a73e8] py-1.5 text-xs font-medium text-white"
+                className="mt-1 w-full rounded-full bg-[#b45309] py-1.5 text-xs font-medium text-white"
               >
                 Save template
               </button>
@@ -246,7 +246,7 @@ export function SettingsWorkspaceView() {
             <div>
               <div className="font-medium">Diagnostics</div>
               <div className="mt-1 rounded-xl bg-[#f1f3f4] p-2 dark:bg-[#202124]">
-                <div>App: {status?.appName ?? "OpenRouter Workspace"} v{status?.appVersion ?? "1.0.0"}</div>
+                <div>App: {status?.appName ?? "BananaRouter"} v{status?.appVersion ?? "1.0.0"}</div>
                 <div>Model: {settings.model}</div>
                 <div>Backend: {status ? "ok" : "unknown"}</div>
                 <div>Storage: IndexedDB + localStorage • offline: yes</div>

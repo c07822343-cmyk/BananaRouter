@@ -62,7 +62,7 @@ export function MailView() {
     <div className="flex h-full">
       <div className="hidden w-[340px] shrink-0 flex-col border-r bg-[#f8f9fa] dark:bg-[#202124] md:flex">
         <div className="p-3">
-          <button onClick={() => setComposeOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1a73e8] px-4 py-3 text-sm font-medium text-white shadow"><Plus size={16} /> Compose</button>
+          <button onClick={() => setComposeOpen(true)} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#b45309] px-4 py-3 text-sm font-medium text-white shadow"><Plus size={16} /> Compose</button>
           <div className="relative mt-3">
             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--muted-foreground))]" />
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search drafts" className="w-full rounded-full bg-white py-2 pl-9 pr-3 text-sm dark:bg-[#303134]" />
@@ -100,7 +100,7 @@ export function MailView() {
               <input value={compose.subject ?? ""} onChange={(e) => setCompose({ ...compose, subject: e.target.value })} placeholder="Subject" className="w-full rounded-xl border bg-[#f8f9fa] px-3 py-2 text-sm dark:bg-[#303134]" />
               <textarea value={compose.body ?? ""} onChange={(e) => setCompose({ ...compose, body: e.target.value })} placeholder="Body — describe what you want AI to draft" className="min-h-[180px] w-full rounded-xl border bg-[#f8f9fa] p-3 text-sm dark:bg-[#303134]" />
               <div className="flex flex-wrap gap-2">
-                <button onClick={handleAiDraft} disabled={aiLoading} className="rounded-full bg-[#1a73e8] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"><Sparkles size={14} className="inline" /> AI Draft</button>
+                <button onClick={handleAiDraft} disabled={aiLoading} className="rounded-full bg-[#b45309] px-4 py-2 text-sm font-medium text-white disabled:opacity-50"><Sparkles size={14} className="inline" /> AI Draft</button>
                 <button onClick={handleComposeSave} className="rounded-full bg-white px-4 py-2 text-sm font-medium shadow">Save draft</button>
                 <button onClick={() => setComposeOpen(false)} className="rounded-full border px-4 py-2 text-sm">Cancel</button>
               </div>
@@ -111,7 +111,7 @@ export function MailView() {
             <div className="flex items-center gap-2 border-b bg-[#f1f3f4] px-4 py-2 dark:bg-[#303134]">
               <button onClick={() => setComposeOpen(true)} className="rounded-full bg-white px-3 py-1 text-xs shadow md:hidden">Compose</button>
               <div className="ml-auto flex gap-1">
-                <button onClick={handleAiDraft} disabled={aiLoading} className="rounded-full bg-[#e8f0fe] px-3 py-1.5 text-xs font-medium text-[#1a73e8] disabled:opacity-50"><Sparkles size={12} className="inline" /> AI Draft/Improve</button>
+                <button onClick={handleAiDraft} disabled={aiLoading} className="rounded-full bg-[#FFFBEB] px-3 py-1.5 text-xs font-medium text-[#b45309] disabled:opacity-50"><Sparkles size={12} className="inline" /> AI Draft/Improve</button>
                 <button onClick={() => handleAiRewrite("professional")} disabled={aiLoading} className="rounded-full bg-white px-3 py-1 text-xs shadow">More professional</button>
                 <button onClick={() => handleAiRewrite("shorten")} disabled={aiLoading} className="rounded-full bg-white px-3 py-1 text-xs shadow">Shorter</button>
                 <button onClick={() => handleAiRewrite("friendly")} disabled={aiLoading} className="rounded-full bg-white px-3 py-1 text-xs shadow">Friendlier</button>
@@ -128,7 +128,7 @@ export function MailView() {
                 </div>
                 <textarea value={active.body} onChange={(e) => updateEmailDraft(active.id, { body: e.target.value })} className="mt-4 min-h-[280px] w-full rounded-2xl border bg-white p-4 text-sm leading-6 dark:bg-[#303134]" />
                 <div className="mt-3 flex gap-2">
-                  <button onClick={() => { addNotification({ title: "Not sent", message: "Drafts are local only. Configure Gmail integration to send.", type: "info" }); }} className="rounded-full bg-[#1a73e8] px-5 py-2 text-sm font-medium text-white"><Send size={14} className="inline" /> Save (not sent)</button>
+                  <button onClick={() => { addNotification({ title: "Not sent", message: "Drafts are local only. Configure Gmail integration to send.", type: "info" }); }} className="rounded-full bg-[#b45309] px-5 py-2 text-sm font-medium text-white"><Send size={14} className="inline" /> Save (not sent)</button>
                   <button onClick={() => updateEmailDraft(active.id, { starred: !active.starred })} className="rounded-full border bg-white px-3 py-2 text-sm dark:bg-[#303134]"><Star size={14} className={active.starred ? "fill-[#fbbc04] text-[#fbbc04]" : ""} /></button>
                   <button onClick={() => { if (confirm("Delete draft?")) deleteEmailDraft(active.id); }} className="rounded-full border bg-white px-3 py-2 text-sm dark:bg-[#303134]"><Trash2 size={14} /></button>
                 </div>
@@ -140,7 +140,7 @@ export function MailView() {
           <div className="p-8 text-center">
             <Mail size={32} className="mx-auto mb-2 opacity-40" />
             <p className="text-sm font-medium">No draft selected</p>
-            <button onClick={() => setComposeOpen(true)} className="mt-3 rounded-full bg-[#1a73e8] px-4 py-2 text-sm font-medium text-white">Compose</button>
+            <button onClick={() => setComposeOpen(true)} className="mt-3 rounded-full bg-[#b45309] px-4 py-2 text-sm font-medium text-white">Compose</button>
           </div>
         )}
       </div>

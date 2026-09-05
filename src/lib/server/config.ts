@@ -2,9 +2,9 @@ import { promises as fs } from "fs";
 import path from "path";
 
 const DEFAULT_MODEL = "openrouter/free";
-const DEFAULT_APP_NAME = "OpenRouter Workspace";
+const DEFAULT_APP_NAME = "BananaRouter";
 const DEFAULT_APP_DESCRIPTION =
-  "One AI workspace for thinking, creating, organizing, researching, and working with information.";
+  "BananaRouter — An AI-powered workspace built around OpenRouter.";
 const DEFAULT_REFERER = "http://localhost:3000";
 
 interface RuntimeConfig {

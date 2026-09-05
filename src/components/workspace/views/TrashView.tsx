@@ -58,7 +58,7 @@ export function TrashView() {
               </div>
               <button
                 onClick={() => handleRestore(it)}
-                className="rounded-full bg-[#e8f0fe] px-3 py-1 text-xs font-medium text-[#1a73e8]"
+                className="rounded-full bg-[#FFFBEB] px-3 py-1 text-xs font-medium text-[#b45309]"
               >
                 <RotateCcw size={12} className="inline" /> Restore
               </button>

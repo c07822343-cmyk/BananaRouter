@@ -169,9 +169,9 @@ export function ChatView() {
     <div className="flex h-full flex-col">
       {/* context bar */}
       <div className="flex flex-wrap items-center gap-2 border-b bg-[#f8f9fa] px-3 py-2 text-xs dark:bg-[#303134]">
-        <span className="flex items-center gap-1 font-medium"><Sparkles size={12} className="text-[#1a73e8]" /> Chat with context:</span>
+        <span className="flex items-center gap-1 font-medium"><Sparkles size={12} className="text-[#b45309]" /> Chat with context:</span>
         {state.files.slice(0, 4).map((f) => (
-          <label key={f.id} className={`flex items-center gap-1 rounded-full border px-2.5 py-1 ${attachedFiles.includes(f.id) ? "bg-[#e8f0fe] text-[#1a73e8]" : "bg-white"}`}>
+          <label key={f.id} className={`flex items-center gap-1 rounded-full border px-2.5 py-1 ${attachedFiles.includes(f.id) ? "bg-[#FFFBEB] text-[#b45309]" : "bg-white"}`}>
             <input type="checkbox" checked={attachedFiles.includes(f.id)} onChange={() => setAttachedFiles((prev) => prev.includes(f.id) ? prev.filter((x) => x !== f.id) : [...prev, f.id])} />
             <Paperclip size={10} /> {f.name.slice(0, 14)}
           </label>
@@ -187,7 +187,7 @@ export function ChatView() {
         {/* conversation list */}
         <div className="hidden w-[300px] shrink-0 flex-col border-r bg-[#f8f9fa] dark:bg-[#202124] md:flex">
           <div className="p-3">
-            <button onClick={handleNewChat} className="w-full rounded-full bg-[#1a73e8] py-2 text-sm font-medium text-white">New chat</button>
+            <button onClick={handleNewChat} className="w-full rounded-full bg-[#b45309] py-2 text-sm font-medium text-white">New chat</button>
           </div>
           <div className="flex-1 overflow-y-auto px-2">
             {state.conversations.map((c) => (
@@ -211,7 +211,7 @@ export function ChatView() {
             currentModel={settings.model}
             draft={draft}
             debugInfo={settings.debugLogging ? debugInfo : null}
-            appName="OpenRouter Workspace"
+            appName="BananaRouter"
             onModelChange={(m) => { const next = { ...settings, model: m }; setSettings(next); saveSettings(next); }}
             onDraftChange={setDraft}
             onSend={handleSend}

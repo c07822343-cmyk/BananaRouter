@@ -74,7 +74,7 @@ export function CalendarView() {
             <button key={v} onClick={() => setView(v)} className={`rounded-full px-3 py-1 text-xs capitalize ${view === v ? "bg-white shadow dark:bg-[#3c4043]" : ""}`}>{v}</button>
           ))}
         </div>
-        <button onClick={handleCreate} className="rounded-full bg-[#1a73e8] px-4 py-1.5 text-sm font-medium text-white"><Plus size={14} className="inline" /> Create</button>
+        <button onClick={handleCreate} className="rounded-full bg-[#b45309] px-4 py-1.5 text-sm font-medium text-white"><Plus size={14} className="inline" /> Create</button>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -92,12 +92,12 @@ export function CalendarView() {
                   <div
                     key={i}
                     onClick={() => setSelectedDate(d)}
-                    className={`min-h-[96px] cursor-pointer bg-white p-1 dark:bg-[#202124] ${!isCurMonth ? "opacity-40" : ""} ${selectedDate.toDateString() === d.toDateString() ? "ring-1 ring-[#1a73e8]" : ""}`}
+                    className={`min-h-[96px] cursor-pointer bg-white p-1 dark:bg-[#202124] ${!isCurMonth ? "opacity-40" : ""} ${selectedDate.toDateString() === d.toDateString() ? "ring-1 ring-[#b45309]" : ""}`}
                   >
-                    <div className={`mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs ${isToday ? "bg-[#1a73e8] text-white" : ""}`}>{d.getDate()}</div>
+                    <div className={`mx-auto flex h-6 w-6 items-center justify-center rounded-full text-xs ${isToday ? "bg-[#b45309] text-white" : ""}`}>{d.getDate()}</div>
                     <div className="mt-1 space-y-1">
                       {evs.slice(0, 3).map((e) => (
-                        <div key={e.id} className="truncate rounded bg-[#e8f0fe] px-1 py-0.5 text-[11px] text-[#1a73e8] dark:bg-[#394457] dark:text-[#8ab4f8]">{new Date(e.start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} {e.title}</div>
+                        <div key={e.id} className="truncate rounded bg-[#FFFBEB] px-1 py-0.5 text-[11px] text-[#b45309] dark:bg-[#2a2210] dark:text-[#fcd34d]">{new Date(e.start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} {e.title}</div>
                       ))}
                       {evs.length > 3 && <div className="text-[11px] text-[hsl(var(--muted-foreground))]">+{evs.length - 3} more</div>}
                     </div>
@@ -117,7 +117,7 @@ export function CalendarView() {
                   ) : (
                     dayEvents(selectedDate).map((e) => (
                       <div key={e.id} className="flex items-center gap-3 rounded-xl border bg-white px-3 py-2 dark:bg-[#202124]">
-                        <div className="h-8 w-1 rounded-full" style={{ background: e.color ?? "#1a73e8" }} />
+                        <div className="h-8 w-1 rounded-full" style={{ background: e.color ?? "#b45309" }} />
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium">{e.title}</div>
                           <div className="text-xs text-[hsl(var(--muted-foreground))]">{new Date(e.start).toLocaleString()} → {new Date(e.end).toLocaleTimeString()}</div>
@@ -144,15 +144,15 @@ export function CalendarView() {
                 </div>
               ))}
               {dayEvents(selectedDate).length === 0 && <div className="text-xs text-[hsl(var(--muted-foreground))]">No events.</div>}
-              <button onClick={handleCreate} className="w-full rounded-full bg-[#1a73e8] py-1.5 text-xs font-medium text-white">Add event</button>
+              <button onClick={handleCreate} className="w-full rounded-full bg-[#b45309] py-1.5 text-xs font-medium text-white">Add event</button>
             </div>
           </div>
 
           <div className="p-4">
-            <div className="flex items-center gap-2 text-sm font-medium"><Sparkles size={14} className="text-[#1a73e8]" /> AI Planner</div>
+            <div className="flex items-center gap-2 text-sm font-medium"><Sparkles size={14} className="text-[#b45309]" /> AI Planner</div>
             <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Does not auto-create without preview. AI suggests, you confirm.</p>
             <textarea value={aiPrompt} onChange={(e) => setAiPrompt(e.target.value)} placeholder="e.g., Create a study schedule for finals" className="mt-2 min-h-[80px] w-full rounded-xl border bg-white p-2 text-sm dark:bg-[#303134]" />
-            <button onClick={handleAiPlan} disabled={aiLoading || !aiPrompt.trim()} className="mt-2 w-full rounded-full bg-[#1a73e8] py-2 text-sm font-medium text-white disabled:opacity-50">{aiLoading ? "Planning…" : "Generate plan (preview)"}</button>
+            <button onClick={handleAiPlan} disabled={aiLoading || !aiPrompt.trim()} className="mt-2 w-full rounded-full bg-[#b45309] py-2 text-sm font-medium text-white disabled:opacity-50">{aiLoading ? "Planning…" : "Generate plan (preview)"}</button>
           </div>
         </div>
       </div>

@@ -22,13 +22,16 @@ import { ProjectsView } from "@/components/workspace/views/ProjectsView";
 import { TrashView } from "@/components/workspace/views/TrashView";
 import { SettingsWorkspaceView } from "@/components/workspace/views/SettingsWorkspaceView";
 import { SearchItem, AIContext } from "@/lib/workspace/types";
-import { X, Bell, Check } from "lucide-react";
+import { X, Bell, Check, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { applyTheme, loadTheme } from "@/lib/client/settings";
+import { BananaLogo } from "@/components/branding/BananaLogo";
+import { Onboarding } from "./Onboarding";
 
 export function WorkspaceShell() {
   const { state, addNotification, saving, lastSavedAt, createDocument, createNote, createTask, createSpreadsheet, createFolder } = useWorkspace();
   const [view, setView] = useState<WorkspaceView>("home");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const [globalQuery, setGlobalQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
@@ -36,6 +39,16 @@ export function WorkspaceShell() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [assistantContext, setAssistantContext] = useState<AIContext>({ currentView: "home" });
   const [theme, setTheme] = useState(loadTheme());
+
+  useEffect(() => {
+    try {
+      const v = localStorage.getItem("banana:sidebar-collapsed");
+      if (v === "1") setCollapsed(true);
+    } catch {}
+  }, []);
+  useEffect(() => {
+    try { localStorage.setItem("banana:sidebar-collapsed", collapsed ? "1" : "0"); } catch {}
+  }, [collapsed]);
 
   useEffect(() => {
     applyTheme(theme as any);
@@ -47,6 +60,10 @@ export function WorkspaceShell() {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setCommandOpen((v) => !v);
+      }
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        handleQuick("new-doc");
       }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "f") {
         e.preventDefault();
@@ -71,9 +88,7 @@ export function WorkspaceShell() {
   const handleSearchSelect = (item: SearchItem, v: WorkspaceView) => {
     setSearchOpen(false);
     setView(v);
-    // could also highlight item id via context - simple notification
     addNotification({ title: "Opened from search", message: `${item.title} • ${item.type}`, type: "info" });
-    // if item is specific type, set context for assistant
     if (item.type === "document") {
       const doc = state.documents.find((d) => d.id === item.id);
       if (doc) setAssistantContext({ currentView: v, selectedDocument: doc, projectId: state.activeProjectId });
@@ -139,7 +154,7 @@ export function WorkspaceShell() {
   };
 
   return (
-    <div className="flex h-[100dvh] flex-col bg-[#f8f9fa] dark:bg-[#202124]">
+    <div className="flex h-[100dvh] flex-col bg-[#fcfaf7] dark:bg-[#0f0f10] text-[hsl(var(--foreground))]">
       <TopBar
         appName={state.projects.find((p) => p.id === state.activeProjectId)?.name ?? "Workspace"}
         searchQuery={globalQuery}
@@ -156,50 +171,77 @@ export function WorkspaceShell() {
       />
 
       <div className="flex min-h-0 flex-1">
-        {/* Sidebar - desktop */}
-        <aside className="hidden w-[256px] shrink-0 flex-col border-r border-[hsl(var(--border))] bg-white dark:bg-[#202124] md:flex">
-          <div className="p-2">
-            <SidebarNav current={view} onNavigate={handleNavigate} counts={{ drive: state.files.length, tasks: state.tasks.filter((t) => !t.completed && !t.trashed).length, notes: state.notes.filter((n) => !n.archived && !n.trashed).length }} />
-          </div>
-          <div className="mt-auto border-t p-3">
+        {/* Sidebar – desktop, collapsible */}
+        <aside
+          className="hidden shrink-0 flex-col border-r border-[hsl(var(--border))] bg-white dark:bg-[#1a1a1e] md:flex"
+          style={{ width: collapsed ? "var(--sidebar-collapsed-width)" : "var(--sidebar-width)" }}
+        >
+          <div className="flex items-center justify-between px-2 py-2">
+            {!collapsed && (
+              <div className="flex items-center gap-2 px-2 py-1 text-xs font-semibold tracking-widest uppercase text-[hsl(var(--muted-foreground))]">Menu</div>
+            )}
             <button
-              onClick={() => setAssistantOpen((v) => !v)}
-              className={`flex w-full items-center justify-center gap-2 rounded-full px-3 py-2 text-sm font-medium ${assistantOpen ? "bg-[#1a73e8] text-white" : "bg-[#e8f0fe] text-[#1a73e8] dark:bg-[#394457] dark:text-[#8ab4f8]"}`}
+              onClick={() => setCollapsed(v=>!v)}
+              className="ml-auto rounded-lg p-1.5 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] hover:text-[hsl(var(--foreground))] transition"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={collapsed ? "Expand (keep focus)" : "Collapse"}
             >
-              {assistantOpen ? "Close Assistant" : "Ask AI"}
+              {collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
             </button>
-            <div className="mt-2 text-center text-[11px] text-[hsl(var(--muted-foreground))]">AI via OpenRouter • Context-aware</div>
+          </div>
+          <div className="flex-1 overflow-y-auto py-2">
+            <SidebarNav current={view} onNavigate={handleNavigate} collapsed={collapsed} counts={{ drive: state.files.length, tasks: state.tasks.filter((t) => !t.completed && !t.trashed).length, notes: state.notes.filter((n) => !n.archived && !n.trashed).length }} />
+          </div>
+          <div className={`border-t border-[hsl(var(--border))] ${collapsed ? "p-2" : "p-3"}`}>
+            {!collapsed ? (
+              <>
+                <button
+                  onClick={() => setAssistantOpen((v) => !v)}
+                  className={`flex w-full items-center justify-center gap-2 rounded-full px-3 py-2.5 text-sm font-semibold shadow-sm transition ${assistantOpen ? "bg-[#1a1a1a] text-white dark:bg-white dark:text-[#1a1a1a]" : "bg-[#F6C446] text-[#1a1a1a] hover:brightness-95"}`}
+                >
+                  {assistantOpen ? "Close Assistant" : "Ask BananaRouter AI"}
+                </button>
+                <div className="mt-2 text-center text-[11px] text-[hsl(var(--muted-foreground))]">Powered by OpenRouter · Context-aware</div>
+              </>
+            ) : (
+              <button onClick={() => setAssistantOpen(v=>!v)} className="flex w-full items-center justify-center rounded-full bg-[#F6C446] p-2.5 text-[#1a1a1a] shadow-sm" aria-label="Ask AI">
+                <BananaLogo size={20} />
+              </button>
+            )}
           </div>
         </aside>
 
         {/* Mobile drawer */}
         {sidebarOpen && (
           <>
-            <div className="fixed inset-0 z-30 bg-black/30 md:hidden" onClick={() => setSidebarOpen(false)} />
-            <aside className="fixed inset-y-0 left-0 z-40 flex w-[280px] flex-col bg-white dark:bg-[#202124] md:hidden">
-              <div className="flex items-center justify-between border-b px-4 py-3">
-                <span className="text-sm font-medium">Workspace</span>
-                <button onClick={() => setSidebarOpen(false)} className="rounded-full p-1 hover:bg-[hsl(var(--muted))]"><X size={16} /></button>
+            <div className="fixed inset-0 z-30 bg-black/30 md:hidden backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+            <aside className="fixed inset-y-0 left-0 z-40 flex w-[300px] flex-col bg-white dark:bg-[#1a1a1e] shadow-2xl md:hidden">
+              <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-4 py-3">
+                <span className="flex items-center gap-2 text-sm font-semibold"><BananaLogo size={24} /> BananaRouter</span>
+                <button onClick={() => setSidebarOpen(false)} className="rounded-full p-1.5 hover:bg-[hsl(var(--muted))]"><X size={16} /></button>
               </div>
-              <div className="flex-1 overflow-y-auto p-2">
+              <div className="flex-1 overflow-y-auto py-2">
                 <SidebarNav current={view} onNavigate={(v) => { handleNavigate(v); setSidebarOpen(false); }} />
+              </div>
+              <div className="border-t p-3">
+                <button onClick={() => { setAssistantOpen(v=>!v); setSidebarOpen(false); }} className="w-full rounded-full bg-[#F6C446] py-2.5 text-sm font-semibold text-[#1a1a1a]">Ask BananaRouter AI</button>
               </div>
             </aside>
           </>
         )}
 
         {/* Main */}
-        <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#f8f9fa] dark:bg-[#202124]">
+        <main className="flex min-w-0 flex-1 flex-col overflow-hidden bg-[#fcfaf7] dark:bg-[#0f0f10]">
           <div className="flex-1 overflow-y-auto">
-            {/* Breadcrumbs */}
-            <div className="sticky top-0 z-10 flex items-center gap-2 border-b bg-white/80 px-4 py-2 text-xs backdrop-blur dark:bg-[#202124]/80">
-              <span className="text-[hsl(var(--muted-foreground))]">Workspace</span>
-              <span>/</span>
+            {/* Breadcrumbs – subtle */}
+            <div className="sticky top-0 z-10 flex items-center gap-2 border-b border-[hsl(var(--border))]/60 bg-white/80 dark:bg-[#1a1a1e]/80 px-4 py-2 text-xs backdrop-blur">
+              <span className="text-[hsl(var(--muted-foreground))]">BananaRouter</span>
+              <span className="text-[hsl(var(--muted-foreground))]">/</span>
               <span className="font-medium capitalize">{view.replace("-", " ")}</span>
               <span className="ml-auto hidden items-center gap-2 md:flex">
                 <button
                   onClick={() => setAssistantOpen((v) => !v)}
-                  className="rounded-full bg-[#e8f0fe] px-3 py-1 text-xs font-medium text-[#1a73e8] dark:bg-[#394457] dark:text-[#8ab4f8]"
+                  className="rounded-full bg-[#f8f7f5] dark:bg-[#252529] border border-[hsl(var(--border))] px-3 py-1 text-xs font-medium hover:bg-[#FFFBEB] dark:hover:bg-[#2a2210] transition"
                 >
                   {assistantOpen ? "Hide assistant" : "Ask AI about this"}
                 </button>
@@ -213,12 +255,13 @@ export function WorkspaceShell() {
 
         {/* Right assistant panel */}
         {assistantOpen && (
-          <div className="hidden shrink-0 border-l bg-white dark:bg-[#202124] lg:flex">
+          <div className="hidden shrink-0 border-l border-[hsl(var(--border))] bg-white dark:bg-[#1a1a1e] shadow-sm lg:flex">
             <AssistantPanel open={assistantOpen} onClose={() => setAssistantOpen(false)} context={{ ...assistantContext, currentView: view }} view={view} />
           </div>
         )}
       </div>
 
+      <Onboarding />
       {/* Overlays */}
       <GlobalSearchPanel state={state} query={globalQuery} onQueryChange={setGlobalQuery} onSelect={handleSearchSelect} onClose={() => setSearchOpen(false)} open={searchOpen} />
       <CommandPalette open={commandOpen} onClose={() => setCommandOpen(false)} onNavigate={handleNavigate} onQuick={handleQuick} />
@@ -226,10 +269,10 @@ export function WorkspaceShell() {
       {/* Notifications drawer */}
       {notifOpen && (
         <div className="fixed inset-0 z-50 flex justify-end" onClick={() => setNotifOpen(false)}>
-          <div className="absolute inset-0 bg-black/20" />
-          <div className="relative flex h-full w-[380px] flex-col bg-white shadow-2xl dark:bg-[#202124]" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
+          <div className="relative flex h-full w-[380px] flex-col bg-white shadow-2xl dark:bg-[#1a1a1e] border-l border-[hsl(var(--border))]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b px-4 py-3">
-              <span className="flex items-center gap-2 text-sm font-medium"><Bell size={16} /> Notifications</span>
+              <span className="flex items-center gap-2 text-sm font-semibold"><Bell size={16} /> Notifications</span>
               <button onClick={() => setNotifOpen(false)} className="rounded-full p-1.5 hover:bg-[hsl(var(--muted))]"><X size={16} /></button>
             </div>
             <div className="flex-1 overflow-y-auto p-3">
@@ -238,9 +281,9 @@ export function WorkspaceShell() {
               ) : (
                 <div className="space-y-2">
                   {state.notifications.map((n) => (
-                    <div key={n.id} className={`rounded-xl border p-3 ${!n.read ? "bg-[#e8f0fe] dark:bg-[#394457]" : "bg-white dark:bg-[#303134]"}`}>
+                    <div key={n.id} className={`rounded-2xl border p-3 ${!n.read ? "bg-[#FFFBEB] dark:bg-[#2a2210] border-[#FDE68A]/50" : "bg-white dark:bg-[#252529] border-[hsl(var(--border))]"}`}>
                       <div className="text-sm font-medium">{n.title}</div>
-                      <div className="text-xs text-[hsl(var(--muted-foreground))]">{n.message}</div>
+                      <div className="text-xs text-[hsl(var(--muted-foreground))] leading-relaxed">{n.message}</div>
                       <div className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">{new Date(n.createdAt).toLocaleString()}</div>
                     </div>
                   ))}
@@ -248,7 +291,7 @@ export function WorkspaceShell() {
               )}
             </div>
             <div className="border-t p-3">
-              <button onClick={() => { (state.notifications as any).forEach((n: any) => n.read = true); setNotifOpen(false); }} className="w-full rounded-full border bg-white py-2 text-sm dark:bg-[#303134]"><Check size={14} className="inline" /> Mark all read</button>
+              <button onClick={() => { (state.notifications as any).forEach((n: any) => n.read = true); setNotifOpen(false); }} className="w-full rounded-full border bg-white py-2 text-sm dark:bg-[#252529] hover:bg-[hsl(var(--muted))] transition"><Check size={14} className="inline" /> Mark all read</button>
             </div>
           </div>
         </div>
@@ -257,8 +300,8 @@ export function WorkspaceShell() {
       {/* Mobile assistant as drawer */}
       {assistantOpen && (
         <div className="fixed inset-0 z-40 flex justify-end lg:hidden" onClick={() => setAssistantOpen(false)}>
-          <div className="absolute inset-0 bg-black/20" />
-          <div className="relative h-full w-[90%] max-w-[360px]" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-0 bg-black/20 backdrop-blur-[2px]" />
+          <div className="relative h-full w-[94%] max-w-[380px] shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <AssistantPanel open view={view} context={{ ...assistantContext, currentView: view }} onClose={() => setAssistantOpen(false)} />
           </div>
         </div>

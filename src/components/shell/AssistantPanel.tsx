@@ -55,10 +55,11 @@ export function AssistantPanel({ open, onClose, context, view }: {
     <div className="flex h-full w-[360px] shrink-0 flex-col border-l border-[hsl(var(--border))] bg-white dark:bg-[#202124]">
       <div className="flex items-center justify-between border-b border-[hsl(var(--border))] px-4 py-3">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#8ab4f8] text-[#202124]">
+          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#F6C446] text-[#1a1a1a] shadow-sm">
             <Sparkles size={14} />
           </div>
-          <span className="text-sm font-medium">AI Assistant</span>
+          <span className="text-sm font-semibold">BananaRouter AI</span>
+          <span className="hidden sm:inline text-[11px] text-[hsl(var(--muted-foreground))]">Powered by OpenRouter</span>
         </div>
         <button onClick={onClose} className="rounded-full p-1.5 hover:bg-[hsl(var(--muted))]">
           <X size={16} />
@@ -66,7 +67,7 @@ export function AssistantPanel({ open, onClose, context, view }: {
       </div>
 
       <div className="flex-1 overflow-y-auto p-4">
-        <div className="mb-3 rounded-xl bg-[#e8f0fe] p-3 text-xs dark:bg-[#394457]">
+        <div className="mb-3 rounded-xl bg-[#FFFBEB] p-3 text-xs dark:bg-[#2a2210]">
           <div className="font-medium">Current view: {view}</div>
           {hasContext ? (
             <div className="mt-1 text-[hsl(var(--muted-foreground))] dark:text-[#bdc1c6]">
@@ -80,7 +81,7 @@ export function AssistantPanel({ open, onClose, context, view }: {
           ) : (
             <div className="mt-1 text-[hsl(var(--muted-foreground))] dark:text-[#bdc1c6]">No extra context selected. Attach a file or select a document to give the AI more to work with.</div>
           )}
-          <div className="mt-2 text-[11px] text-[#1a73e8] dark:text-[#8ab4f8]">Only the selected context is sent to OpenRouter.</div>
+          <div className="mt-2 text-[11px] text-[#b45309] dark:text-[#fcd34d]">Only the selected context is sent to OpenRouter.</div>
         </div>
 
         {output && (
@@ -112,12 +113,12 @@ export function AssistantPanel({ open, onClose, context, view }: {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleAsk(); } }}
             placeholder={hasContext ? "Ask about the selected context..." : "Ask the assistant..."}
-            className="flex-1 rounded-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#1a73e8]"
+            className="flex-1 rounded-full border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-[#b45309]"
           />
           <button
             onClick={handleAsk}
             disabled={loading || !input.trim()}
-            className="rounded-full bg-[#1a73e8] p-2.5 text-white hover:bg-[#1765cc] disabled:opacity-50"
+            className="rounded-full bg-[#b45309] p-2.5 text-white hover:bg-[#92400e] disabled:opacity-50"
             aria-label="Send"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ArrowDown, Bot } from "lucide-react";
+import { ArrowDown, Sparkles } from "lucide-react";
 import { ApiError, AppDebugInfo, Conversation } from "@/lib/shared/types";
 import { MessageBubble } from "./MessageBubble";
 import { MessageComposer } from "./MessageComposer";
@@ -9,6 +9,7 @@ import { EmptyState } from "./EmptyState";
 import { ErrorBanner } from "./ErrorBanner";
 import { ModelSelector } from "@/components/settings/ModelSelector";
 import { DebugPanel } from "./DebugPanel";
+import { BananaLogo } from "@/components/branding/BananaLogo";
 
 interface ChatPanelProps {
   conversation: Conversation | null;
@@ -89,21 +90,21 @@ export function ChatPanel({
   const showStreaming = isGenerating && streamingMessage.length > 0;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 md:px-5">
-        <div className="hidden items-center gap-1.5 text-[11px] text-[hsl(var(--muted-foreground))] sm:flex">
-          <Bot size={13} className="text-[hsl(var(--primary))]" />
-          Powered by OpenRouter
+    <div className="flex min-h-0 flex-1 flex-col bg-white dark:bg-[#0f0f10]">
+      <div className="flex shrink-0 items-center justify-between gap-2 border-b border-[hsl(var(--border))]/60 bg-white/80 dark:bg-[#0f0f10]/80 backdrop-blur px-3 py-2.5 md:px-5 sticky top-0 z-10">
+        <div className="flex items-center gap-2 text-[12px]">
+          <BananaLogo size={20} />
+          <span className="font-semibold tracking-tight">BananaRouter AI</span>
+          <span className="text-[hsl(var(--muted-foreground))] hidden sm:inline">Powered by OpenRouter</span>
+          <span className="hidden sm:inline-flex rounded-full bg-[#FFFBEB] dark:bg-[#2a2210] border border-[#FDE68A]/50 px-2 py-0.5 text-[11px] font-medium text-[#92400e] dark:text-[#fde68a]">{currentModel?.includes("free") ? "Free Router" : currentModel}</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-[11px] text-[hsl(var(--muted-foreground))]">
-            Model
-          </span>
+          <span className="hidden sm:block text-[11px] text-[hsl(var(--muted-foreground))]">Model</span>
           <ModelSelector compact value={currentModel} onChange={onModelChange} />
         </div>
       </div>
 
-      <div ref={scrollRef} onScroll={handleScroll} className="relative min-h-0 flex-1 overflow-y-auto px-3 py-6 md:px-5">
+      <div ref={scrollRef} onScroll={handleScroll} className="relative min-h-0 flex-1 overflow-y-auto px-4 py-8 md:px-6 bg-[#fcfaf7] dark:bg-[#0f0f10]">
         {messages.length === 0 && !isGenerating ? (
           <div className="h-full">
             <EmptyState appName={appName} onPickPrompt={(prompt) => {
@@ -112,49 +113,53 @@ export function ChatPanel({
             }} />
           </div>
         ) : (
-          <div className="mx-auto flex max-w-3xl flex-col gap-5 pb-24">
+          <div className="mx-auto flex max-w-[var(--chat-max)] flex-col gap-8 pb-24">
             {messages.map((message, index) => (
-              <MessageBubble
-                key={message.id ?? `${message.role}-${index}`}
-                message={message}
-                isStreaming={isGenerating && index === messages.length - 1 && message.role === "assistant"}
-                isLast={index === messages.length - 1 && !isGenerating}
-                onRegenerate={
-                  message.role === "assistant" && index === messages.length - 1
-                    ? onRegenerate
-                    : undefined
-                }
-                onRetry={
-                  message.role === "assistant" && index === messages.length - 1
-                    ? onRetry
-                    : undefined
-                }
-                onEdit={
-                  message.role === "user" && message.id
-                    ? (newText: string) => onEditMessage(message.id!, newText)
-                    : undefined
-                }
-                onFeedback={message.role === "assistant" ? onFeedback : undefined}
-              />
+              <div key={message.id ?? `${message.role}-${index}`} className={index !== 0 ? "pt-6 border-t border-[hsl(var(--border))]/40" : ""}>
+                <MessageBubble
+                  message={message}
+                  isStreaming={isGenerating && index === messages.length - 1 && message.role === "assistant"}
+                  isLast={index === messages.length - 1 && !isGenerating}
+                  onRegenerate={
+                    message.role === "assistant" && index === messages.length - 1
+                      ? onRegenerate
+                      : undefined
+                  }
+                  onRetry={
+                    message.role === "assistant" && index === messages.length - 1
+                      ? onRetry
+                      : undefined
+                  }
+                  onEdit={
+                    message.role === "user" && message.id
+                      ? (newText: string) => onEditMessage(message.id!, newText)
+                      : undefined
+                  }
+                  onFeedback={message.role === "assistant" ? onFeedback : undefined}
+                />
+              </div>
             ))}
 
             {showStreaming && (
-              <MessageBubble
-                message={{ role: "assistant", content: streamingMessage }}
-                isStreaming
-                isLast
-              />
+              <div className="pt-6 border-t border-[hsl(var(--border))]/40">
+                <MessageBubble
+                  message={{ role: "assistant", content: streamingMessage }}
+                  isStreaming
+                  isLast
+                />
+              </div>
             )}
 
             {isGenerating && !streamingMessage && (
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]">
-                  <Bot size={16} />
+              <div className="flex items-start gap-3 pt-6 border-t border-[hsl(var(--border))]/40">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#F6C446] text-[#1a1a1a] shadow-sm">
+                  <Sparkles size={14} />
                 </div>
-                <div className="flex items-center gap-1.5 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-3">
-                  <span className="h-2 w-2 animate-pulse-soft rounded-full bg-[hsl(var(--primary))]" />
-                  <span className="h-2 w-2 animate-pulse-soft rounded-full bg-[hsl(var(--primary))] [animation-delay:150ms]" />
-                  <span className="h-2 w-2 animate-pulse-soft rounded-full bg-[hsl(var(--primary))] [animation-delay:300ms]" />
+                <div className="flex items-center gap-1.5 rounded-full border border-[#FDE68A]/50 bg-[#FFFBEB] dark:bg-[#2a2210] px-4 py-2.5">
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-[#F6C446]" style={{ animationDelay: "0ms" }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-[#F6C446]" style={{ animationDelay: "150ms" }} />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-[#F6C446]" style={{ animationDelay: "300ms" }} />
+                  <span className="ml-2 text-xs font-medium text-[#92400e] dark:text-[#fde68a]">BananaRouter is thinking…</span>
                 </div>
               </div>
             )}
@@ -175,7 +180,7 @@ export function ChatPanel({
           <button
             onClick={jumpToLatest}
             aria-label="Jump to latest"
-            className="focus-ring absolute bottom-4 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-2 text-xs font-medium shadow-lg hover:bg-[hsl(var(--muted))]"
+            className="absolute bottom-6 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-[hsl(var(--border))] bg-white dark:bg-[#252529] px-4 py-2 text-xs font-medium shadow-lg hover:bg-[#FFFBEB] dark:hover:bg-[#2a2210] transition"
           >
             <ArrowDown size={14} />
             Jump to latest

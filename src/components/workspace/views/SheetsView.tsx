@@ -92,7 +92,7 @@ export function SheetsView() {
         <h2 className="text-lg font-medium">No spreadsheets yet</h2>
         <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Create a sheet or import a CSV to get started.</p>
         <div className="mt-4 flex justify-center gap-2">
-          <button onClick={() => { const s = createSpreadsheet(); setActiveId(s.id); }} className="rounded-full bg-[#1a73e8] px-5 py-2 text-sm font-medium text-white">New spreadsheet</button>
+          <button onClick={() => { const s = createSpreadsheet(); setActiveId(s.id); }} className="rounded-full bg-[#b45309] px-5 py-2 text-sm font-medium text-white">New spreadsheet</button>
           <label className="cursor-pointer rounded-full border bg-white px-5 py-2 text-sm"><Upload size={14} className="inline" /> Import CSV<input type="file" accept=".csv" className="hidden" onChange={handleCsvImport} /></label>
         </div>
       </div>
@@ -104,11 +104,11 @@ export function SheetsView() {
       <div className="flex items-center gap-2 border-b bg-white px-3 py-2 dark:bg-[#202124]">
         <div className="flex items-center gap-1 overflow-x-auto">
           {sheets.map((s) => (
-            <button key={s.id} onClick={() => { setActiveId(s.id); setActiveSheetId(s.sheets[0]?.id ?? null); }} className={`shrink-0 rounded-full px-3 py-1.5 text-sm ${activeId === s.id ? "bg-[#e8f0fe] text-[#1a73e8]" : "hover:bg-[hsl(var(--muted))]"}`}>{s.title}</button>
+            <button key={s.id} onClick={() => { setActiveId(s.id); setActiveSheetId(s.sheets[0]?.id ?? null); }} className={`shrink-0 rounded-full px-3 py-1.5 text-sm ${activeId === s.id ? "bg-[#FFFBEB] text-[#b45309]" : "hover:bg-[hsl(var(--muted))]"}`}>{s.title}</button>
           ))}
         </div>
         <div className="ml-auto flex gap-1">
-          <button onClick={() => { const s = createSpreadsheet(); setActiveId(s.id); }} className="rounded-full bg-[#1a73e8] px-3 py-1.5 text-xs font-medium text-white"><Plus size={12} className="inline" /> New</button>
+          <button onClick={() => { const s = createSpreadsheet(); setActiveId(s.id); }} className="rounded-full bg-[#b45309] px-3 py-1.5 text-xs font-medium text-white"><Plus size={12} className="inline" /> New</button>
           <label className="cursor-pointer rounded-full border bg-white px-3 py-1.5 text-xs dark:bg-[#303134]"><Upload size={12} className="inline" /> Import<input ref={fileInput} type="file" accept=".csv" className="hidden" onChange={handleCsvImport} /></label>
         </div>
       </div>
@@ -131,9 +131,9 @@ export function SheetsView() {
           </div>
 
           <div className="flex flex-wrap gap-1 border-b bg-white px-3 py-2 dark:bg-[#202124]">
-            <span className="flex items-center gap-1 text-xs font-medium text-[#1a73e8]"><Sparkles size={12} /> AI:</span>
-            <button disabled={aiLoading} onClick={() => askAI("Summarize this data", "sheet.analyze")} className="rounded-full bg-[#e8f0fe] px-2.5 py-1 text-xs text-[#1a73e8] disabled:opacity-50">Summarize</button>
-            <button disabled={aiLoading} onClick={() => askAI("Find trends", "sheet.trends")} className="rounded-full bg-[#e8f0fe] px-2.5 py-1 text-xs text-[#1a73e8] disabled:opacity-50">Trends</button>
+            <span className="flex items-center gap-1 text-xs font-medium text-[#b45309]"><Sparkles size={12} /> AI:</span>
+            <button disabled={aiLoading} onClick={() => askAI("Summarize this data", "sheet.analyze")} className="rounded-full bg-[#FFFBEB] px-2.5 py-1 text-xs text-[#b45309] disabled:opacity-50">Summarize</button>
+            <button disabled={aiLoading} onClick={() => askAI("Find trends", "sheet.trends")} className="rounded-full bg-[#FFFBEB] px-2.5 py-1 text-xs text-[#b45309] disabled:opacity-50">Trends</button>
             <button disabled={aiLoading} onClick={() => askAI("Clean this dataset", "sheet.clean")} className="rounded-full bg-[#fef7e0] px-2.5 py-1 text-xs disabled:opacity-50">Clean dataset (preview)</button>
             <button disabled={aiLoading} onClick={() => askAI("Create a formula to calculate growth", "sheet.analyze")} className="rounded-full border px-2.5 py-1 text-xs disabled:opacity-50">Formula help</button>
           </div>
@@ -149,13 +149,13 @@ export function SheetsView() {
                 </div>
                 {Array.from({ length: sheet.rows }).map((_, r) => (
                   <div key={r} className="flex">
-                    <div className={`w-10 shrink-0 border-b border-r bg-[#f8f9fa] px-2 py-1 text-center text-xs ${r === 0 && sheet.frozenHeader ? "bg-[#e8f0fe]" : ""} dark:bg-[#303134]`}>{r + 1}</div>
+                    <div className={`w-10 shrink-0 border-b border-r bg-[#f8f9fa] px-2 py-1 text-center text-xs ${r === 0 && sheet.frozenHeader ? "bg-[#FFFBEB]" : ""} dark:bg-[#303134]`}>{r + 1}</div>
                     {Array.from({ length: sheet.cols }).map((_, c) => (
                       <input
                         key={c}
                         value={sheet.cells[cellKey(r, c)]?.value ?? ""}
                         onChange={(e) => setCell(r, c, e.target.value)}
-                        className={`min-w-[120px] flex-1 border-b border-r px-2 py-1 text-sm outline-none focus:bg-[#e8f0fe] ${r === 0 ? "bg-[#f8f9fa] font-medium dark:bg-[#3c4043]" : "bg-white dark:bg-[#202124]"}`}
+                        className={`min-w-[120px] flex-1 border-b border-r px-2 py-1 text-sm outline-none focus:bg-[#FFFBEB] ${r === 0 ? "bg-[#f8f9fa] font-medium dark:bg-[#3c4043]" : "bg-white dark:bg-[#202124]"}`}
                       />
                     ))}
                   </div>
@@ -177,10 +177,10 @@ export function SheetsView() {
                     <div className="text-xs font-medium">Preview changes</div>
                     <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
                       <div><div className="font-medium">Before</div><pre className="whitespace-pre-wrap rounded bg-[#f8f9fa] p-2 dark:bg-[#303134]">{showPreviewChanges.before.slice(0, 500)}</pre></div>
-                      <div><div className="font-medium">After (AI)</div><pre className="whitespace-pre-wrap rounded bg-[#e8f0fe] p-2 dark:bg-[#394457]">{showPreviewChanges.after.slice(0, 500)}</pre></div>
+                      <div><div className="font-medium">After (AI)</div><pre className="whitespace-pre-wrap rounded bg-[#FFFBEB] p-2 dark:bg-[#2a2210]">{showPreviewChanges.after.slice(0, 500)}</pre></div>
                     </div>
                     <div className="mt-2 flex gap-2">
-                      <button onClick={() => { addNotification({ title: "Changes applied", message: "Cleaning suggestion applied (demo). Replace cells manually as needed.", type: "success" }); setShowPreviewChanges(null); }} className="rounded-full bg-[#1a73e8] px-3 py-1 text-xs font-medium text-white">Apply</button>
+                      <button onClick={() => { addNotification({ title: "Changes applied", message: "Cleaning suggestion applied (demo). Replace cells manually as needed.", type: "success" }); setShowPreviewChanges(null); }} className="rounded-full bg-[#b45309] px-3 py-1 text-xs font-medium text-white">Apply</button>
                       <button onClick={() => setShowPreviewChanges(null)} className="rounded-full border px-3 py-1 text-xs">Cancel</button>
                     </div>
                   </div>

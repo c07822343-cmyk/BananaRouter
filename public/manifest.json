@@ -1,12 +1,24 @@
 {
-  "name": "OpenRouter Workspace",
-  "short_name": "Workspace",
-  "description": "AI workspace for docs, files, sheets, tasks, notes, calendar and chat — powered by OpenRouter",
+  "name": "BananaRouter",
+  "short_name": "BananaRouter",
+  "description": "BananaRouter — An AI-powered workspace built around OpenRouter",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f8f9fa",
-  "theme_color": "#1a73e8",
+  "background_color": "#FFFBEB",
+  "theme_color": "#F6C446",
   "icons": [
+    {
+      "src": "/branding/banana-router-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/branding/banana-router-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
     {
       "src": "/icon-192.png",
       "sizes": "192x192",
